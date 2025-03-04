@@ -84,7 +84,6 @@ class MainMenu(QMainWindow):
         self.game_window = GameWindow(self.game_background, self.scenes, self.characters)
 
     def play_music(self, music_path):
-        """Проигрывает музыку, если она не уже запущена"""
         abs_music_path = os.path.join(os.path.dirname(__file__), music_path)
         if not os.path.exists(abs_music_path):
             print(f"Ошибка: Музыкальный файл не найден {abs_music_path}")
@@ -97,14 +96,25 @@ class MainMenu(QMainWindow):
             self.music_player.play()
             self.current_music = abs_music_path
 
+            # Перезапуск после окончания
+            self.music_player.stateChanged.connect(self.loop_music)
+
+    def loop_music(self, state):
+        if state == QMediaPlayer.StoppedState:
+            self.music_player.play()
+
     def stop_music(self):
-        self.music_player.stop()
+        if self.music_player.state() == QMediaPlayer.PlayingState:
+            self.music_player.stop()
+            self.music_player.setMedia(QMediaContent())
+            print("Музыка главного меню остановлена.")
 
     def start_game(self):
+        """Запуск игры"""
         print("Запуск игры...")
         self.stop_music()
         self.hide()
-        self.game_window.start_game()  # Вызываем специальный метод для запуска игры
+        self.game_window.start_game()
         self.game_window.show()
 
     def load_game(self):

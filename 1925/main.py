@@ -6,7 +6,6 @@ from script import start_scene
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
-
 background_main_menu = os.path.join(ASSETS_DIR, "backgrounds", "main_menu_bg.gif")
 background_game = os.path.join(ASSETS_DIR, "backgrounds", "hall.png")
 

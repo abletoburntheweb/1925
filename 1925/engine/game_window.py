@@ -68,6 +68,7 @@ class GameWindow(QMainWindow):
 
     def start_game(self):
         """Запускает игру и включает музыку для первой сцены"""
+        self.stop_music()  # Останавливаем любую старую музыку перед запуском
         if self.scenes:
             first_scene = self.scenes[0]
             if isinstance(first_scene, Scene) and first_scene.music:
@@ -97,12 +98,19 @@ class GameWindow(QMainWindow):
                     self.character_label.hide()
 
                 self.display_text(text)
+
             elif isinstance(scene, Scene):
                 new_background_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets",
                                                    "backgrounds", f"{scene.name}.png")
                 self.change_background(new_background_path)
                 self.text_label.setText("")
                 self.character_label.hide()
+
+                # Проверка на наличие музыки в сцене
+                if scene.music:
+                    music_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "music",
+                                              scene.music)
+                    self.play_music(music_path)
         else:
             print("Конец сценария")
 
@@ -150,7 +158,6 @@ class GameWindow(QMainWindow):
                 self.show_next_scene()
 
     def play_music(self, music_path):
-        """Воспроизведение музыки"""
         if not os.path.exists(music_path):
             print(f"Ошибка: Файл музыки не найден: {music_path}")
             return
@@ -161,6 +168,13 @@ class GameWindow(QMainWindow):
             self.music_player.setVolume(50)
             self.music_player.play()
             self.current_music = music_path
+
+            # Подключаем обработчик окончания трека
+            self.music_player.stateChanged.connect(self.loop_music)
+
+    def loop_music(self, state):
+        if state == QMediaPlayer.StoppedState:
+            self.music_player.play()
 
     def stop_music(self):
         self.music_player.stop()
