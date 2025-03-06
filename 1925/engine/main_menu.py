@@ -1,4 +1,5 @@
 # main_menu.py
+
 from PyQt5.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QHBoxLayout, QWidget
 from PyQt5.QtGui import QMovie, QFont, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal, QUrl
@@ -14,43 +15,39 @@ class ClickableLabel(QLabel):
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
         self.setMouseTracking(True)
+        self.setFont(QFont("", 24, QFont.Bold))
+        self.setStyleSheet("color: white;")
+        self.setCursor(QCursor(Qt.PointingHandCursor))
 
     def enterEvent(self, event):
-        self.setStyleSheet("color: #0095FF;")  # Изменяем цвет текста при наведении
+        self.setStyleSheet("color: #0095FF;")
 
     def leaveEvent(self, event):
-        self.setStyleSheet("color: white;")  # Возвращаем исходный цвет текста
+        self.setStyleSheet("color: white;")
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.clicked.emit()
 
-
 class MainMenu(QMainWindow):
-    def __init__(self, background_path, game_background, scenes, characters):
+    def __init__(self, scenes, characters):
         super().__init__()
         self.setWindowTitle("1925 - Главное меню")
         self.setFixedSize(1920, 1080)
         self.setStyleSheet(MENU_STYLES)
 
-        self.game_background = game_background
-        self.scenes = scenes
-        self.characters = characters
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        ASSETS_DIR = os.path.join(BASE_DIR, "..", "assets")
+        self.background_path = os.path.join(ASSETS_DIR, "backgrounds", "main_menu_bg.gif")
+        self.game_background = os.path.join(ASSETS_DIR, "backgrounds", "hall.png")
 
-        # Фон меню с GIF-анимацией
-        self.background = QLabel(self)
-        self.background.setGeometry(0, 0, 1920, 1080)
+        # Фон. анимация
+        self.set_background_animation()
 
-        self.movie = QMovie(background_path)
-        self.movie.setScaledSize(self.size())
-        self.background.setMovie(self.movie)
-        self.movie.start()  # Запуск анимации
-
-        # Музыкальный плеер
+        # Музыкальный плеер (КАКИЕ ЕЩЁ ФОРМАТЫ)
         self.music_player = QMediaPlayer()
         self.current_music = None
-
-        self.play_music("../assets/music/menu_theme.mp3")
+        self.play_music(os.path.join(ASSETS_DIR, "music", "menu_theme.mp3"))
 
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
@@ -61,42 +58,37 @@ class MainMenu(QMainWindow):
         self.button_layout = QVBoxLayout()
         self.button_layout.setAlignment(Qt.AlignTop)
 
-        self.label_start = ClickableLabel("НАЧАТЬ", self)
-        self.label_load = ClickableLabel("ЗАГРУЗИТЬ", self)
-        self.label_settings = ClickableLabel("НАСТРОЙКИ", self)
-
-        # Шрифт
-        font = QFont()
-        font.setPointSize(24)
-        font.setBold(True)
-        for label in [self.label_start, self.label_load, self.label_settings]:
-            label.setFont(font)
-            label.setStyleSheet("color: white;")
-            label.setCursor(QCursor(Qt.PointingHandCursor))
-            self.button_layout.addWidget(label)
+        self.add_labels()
 
         self.main_layout.addLayout(self.button_layout)
 
-        self.label_start.clicked.connect(self.start_game)
-        self.label_load.clicked.connect(self.load_game)
-        self.label_settings.clicked.connect(self.show_settings)
+        self.game_window = GameWindow(self.game_background, scenes, characters)
 
-        self.game_window = GameWindow(self.game_background, self.scenes, self.characters)
+    def set_background_animation(self):
+        self.background = QLabel(self)
+        self.background.setGeometry(0, 0, 1920, 1080)
+        self.movie = QMovie(self.background_path)
+        self.movie.setScaledSize(self.size())
+        self.background.setMovie(self.movie)
+        self.movie.start()
+
+    def add_labels(self):
+        labels = [("НАЧАТЬ", self.start_game), ("ЗАГРУЗИТЬ", self.load_game), ("НАСТРОЙКИ", self.show_settings)]
+        for text, callback in labels:
+            label = ClickableLabel(text, self)
+            label.clicked.connect(callback)
+            self.button_layout.addWidget(label)
 
     def play_music(self, music_path):
-        abs_music_path = os.path.join(os.path.dirname(__file__), music_path)
-        if not os.path.exists(abs_music_path):
-            print(f"Ошибка: Музыкальный файл не найден {abs_music_path}")
+        if not os.path.exists(music_path):
+            print(f"Ошибка: Музыкальный файл не найден {music_path}")
             return
-
-        if self.current_music != abs_music_path:
+        if self.current_music != music_path:
             self.music_player.stop()
-            self.music_player.setMedia(QMediaContent(QUrl.fromLocalFile(abs_music_path)))
+            self.music_player.setMedia(QMediaContent(QUrl.fromLocalFile(music_path)))
             self.music_player.setVolume(50)
             self.music_player.play()
-            self.current_music = abs_music_path
-
-            # Перезапуск после окончания
+            self.current_music = music_path
             self.music_player.stateChanged.connect(self.loop_music)
 
     def loop_music(self, state):
@@ -110,7 +102,6 @@ class MainMenu(QMainWindow):
             print("Музыка главного меню остановлена.")
 
     def start_game(self):
-        """Запуск игры"""
         print("Запуск игры...")
         self.stop_music()
         self.hide()

@@ -1,13 +1,13 @@
 # game_window.py
 
-from PyQt5.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QFrame
+from PyQt5.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QFrame, QPushButton, QHBoxLayout
 from PyQt5.QtGui import QPixmap, QFont, QPainter, QLinearGradient, QBrush, QColor
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import os
 from engine.styles import GAME_WINDOW_STYLES
-from engine.functions import Scene, Dialogue
-
+from engine.functions import Scene, Dialogue,Menu
+from engine.effects import Effect
 
 class GameWindow(QMainWindow):
     def __init__(self, background_path, scenes, characters):
@@ -31,18 +31,15 @@ class GameWindow(QMainWindow):
         else:
             print(f"Ошибка: Изображение {background_path} не найдено или повреждено.")
 
-        # Панель текста
         self.text_frame = CustomTextFrame(self, height=480)
         self.text_frame.update_geometry()
 
-        # Имя персонажа
         self.character_label = QLabel("", self.text_frame)
         self.character_label.setFont(QFont("Arial", 26, QFont.Bold))
         self.character_label.setAlignment(Qt.AlignLeft)
         self.character_label.setStyleSheet("color: white; padding-left: 10px;")
         self.character_label.hide()
 
-        # Диалог
         self.text_label = QLabel("", self.text_frame)
         self.text_label.setFont(QFont("Arial", 24, QFont.Bold))
         self.text_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
@@ -62,13 +59,18 @@ class GameWindow(QMainWindow):
         self.music_player = QMediaPlayer()
         self.current_music = None
 
-        # Обработчики событий
+
+        #ВОТ ТУТ
+        self.effect_manager = Effect(self)
+
+        self.choice_buttons = []  # Список кнопок выбора
+
         self.text_frame.mousePressEvent = self.next_scene_on_click
         self.keyPressEvent = self.next_scene_on_key_press
 
     def start_game(self):
         """Запускает игру и включает музыку для первой сцены"""
-        self.stop_music()  # Останавливаем любую старую музыку перед запуском
+        self.stop_music()
         if self.scenes:
             first_scene = self.scenes[0]
             if isinstance(first_scene, Scene) and first_scene.music:
@@ -78,7 +80,6 @@ class GameWindow(QMainWindow):
         self.show_next_scene()
 
     def show_next_scene(self):
-        """Показывает новую сцену или текст"""
         if self.waiting_for_input:
             return
 
@@ -106,13 +107,65 @@ class GameWindow(QMainWindow):
                 self.text_label.setText("")
                 self.character_label.hide()
 
-                # Проверка на наличие музыки в сцене
                 if scene.music:
                     music_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "music",
                                               scene.music)
                     self.play_music(music_path)
+
+            elif isinstance(scene, Menu):
+                self.show_menu(scene)  # Показываем меню
+
         else:
             print("Конец сценария")
+
+    def show_menu(self, menu):
+        """Показывает меню с вариантами выбора."""
+        self.text_label.setText(menu.prompt)
+
+        for button in self.choice_buttons:
+            button.deleteLater()
+        self.choice_buttons.clear()
+
+        choice_widget = QWidget(self)
+        choice_layout = QVBoxLayout(choice_widget)
+        choice_layout.setSpacing(10)
+        choice_layout.setAlignment(Qt.AlignCenter)
+        choice_widget.setGeometry(0, 400, 1920, 300)
+        choice_widget.setStyleSheet("background-color: transparent;")
+
+        for choice in menu.choices:
+            button = QPushButton(choice.text, self)
+            button.setFont(QFont("Arial", 16))
+            button.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(0, 0, 0, 200);  
+                    color: white;                          
+                    border: none;                         
+                    margin: 5px;
+                    width: 800px;                          
+                    height: 30px;                          
+                }
+                QPushButton:hover {
+                    background-color: rgba(0, 0, 0, 150);
+                }
+            """)
+            button.setCheckable(False)
+            button.clicked.connect(lambda _, r=choice.result: self.handle_choice(r))
+            choice_layout.addWidget(button)
+            self.choice_buttons.append(button)
+
+        choice_widget.show()
+
+    def handle_choice(self, result):
+        """Обрабатывает выбор игрока."""
+        if callable(result):  # Если результат — функция
+            result()
+        elif isinstance(result, list):  # Если результат — список сцен
+            self.scenes = result  # Заменяем текущий сценарий на выбранный
+            self.current_scene_index = -1  # Начинаем с начала нового сценария
+            self.show_next_scene()
+        else:
+            print("Ошибка: Неизвестный тип результата выбора.")
 
     def display_text(self, full_text):
         self.full_text = full_text
@@ -169,7 +222,6 @@ class GameWindow(QMainWindow):
             self.music_player.play()
             self.current_music = music_path
 
-            # Подключаем обработчик окончания трека
             self.music_player.stateChanged.connect(self.loop_music)
 
     def loop_music(self, state):

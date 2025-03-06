@@ -29,6 +29,16 @@ class Dialogue:
     def display(self, game_window):
         game_window.display_text(self.character, self.text)
 
+class Choice:
+    def __init__(self, text, result):
+        self.text = text  # Текст пункта меню
+        self.result = result  # Действие, которое будет выполнено при выборе
+
+class Menu:
+    def __init__(self, prompt, choices):
+        self.prompt = prompt  # Текст перед меню
+        self.choices = choices  # Список вариантов выбора (экземпляры Choice)
+
 
 def narrator(text):
     return Dialogue(None, text)
