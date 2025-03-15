@@ -11,16 +11,21 @@ class SettingsScreen(QWidget):
         # Сохраняем ссылку на music_player
         self.music_player = music_player
 
-        # **Добавляем фоновое изображение**
+        # **Фон**
         self.background_label = QLabel(self)
         pixmap = QPixmap("assets/png/settings_menu.png")  # Загружаем изображение
         if not pixmap.isNull():
             self.background_label.setPixmap(pixmap)
-            self.background_label.setScaledContents(True)  # Растягиваем изображение
+            self.background_label.setScaledContents(True)
+            self.background_label.setGeometry(0, 0, 1920, 1080)  # Устанавливаем фиксированные размеры
         else:
             print("Ошибка загрузки фонового изображения settings_menu.png")
 
-        layout = QVBoxLayout()
+        # **Создаём слой для элементов интерфейса**
+        self.content_widget = QWidget(self)
+        self.content_widget.setGeometry(0, 0, 1920, 1080)  # Фиксируем размеры контентного слоя
+
+        layout = QVBoxLayout(self.content_widget)  # Макет применяется к content_widget
 
         # **Заголовок**
         title = QLabel("НАСТРОЙКИ")
@@ -28,7 +33,7 @@ class SettingsScreen(QWidget):
         title.setFont(QFont("Arial", 32, QFont.Bold))
         title.setStyleSheet("color: white;")
 
-        # **Добавляем тень к заголовку**
+        # **Тень для заголовка**
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(15)
         shadow.setColor(QColor(0, 0, 0, 150))
@@ -43,24 +48,25 @@ class SettingsScreen(QWidget):
         right_column = QVBoxLayout()
 
         # **Левая колонка**
-        self.text_speed_slider = self.add_slider(left_column, "Скорость текста")
-        self.autoscroll_speed_slider = self.add_slider(left_column, "Скорость автоскролла")
+        self.text_speed_slider = self.add_slider(left_column, "Скорость текста (в разработке)")
+        self.autoscroll_speed_slider = self.add_slider(left_column, "Скорость автоскролла (в разработке)")
 
         # **Правая колонка**
-        self.music_volume_slider = self.add_slider(right_column, "Громкость музыки")
-        self.sound_volume_slider = self.add_slider(right_column, "Громкость звуков")
+        current_music_volume = self.music_player.volume() if self.music_player else 50
+        self.music_volume_slider = self.add_slider(right_column, "Громкость музыки", current_music_volume)
+        self.sound_volume_slider = self.add_slider(right_column, "Громкость звуков (в разработке)", 50)
 
         # **Подключаем слайдеры к функциям**
         self.music_volume_slider.valueChanged.connect(self.set_music_volume)
         self.sound_volume_slider.valueChanged.connect(self.set_sound_volume)
 
         # **Переключатель режима экрана**
-        fullscreen_checkbox = QCheckBox("Полноэкранный режим")
-        fullscreen_checkbox.setFont(QFont("Arial", 18))
-        fullscreen_checkbox.setStyleSheet("color: white;")
-        fullscreen_checkbox.setChecked(False)  # По умолчанию оконный режим
-        fullscreen_checkbox.stateChanged.connect(self.toggle_fullscreen)
-        right_column.addWidget(fullscreen_checkbox)
+        self.fullscreen_checkbox = QCheckBox("Полноэкранный режим")
+        self.fullscreen_checkbox.setFont(QFont("Arial", 18))
+        self.fullscreen_checkbox.setStyleSheet("color: white;")
+        self.fullscreen_checkbox.setChecked(False)  # По умолчанию оконный режим
+        self.fullscreen_checkbox.stateChanged.connect(self.toggle_fullscreen)
+        right_column.addWidget(self.fullscreen_checkbox)
 
         settings_layout.addLayout(left_column)
         settings_layout.addLayout(right_column)
@@ -88,13 +94,7 @@ class SettingsScreen(QWidget):
         back_button.clicked.connect(self.close)  # Закрытие окна при нажатии
         layout.addWidget(back_button, alignment=Qt.AlignCenter)
 
-        # **Добавляем общий макет**
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.background_label)  # Фоновое изображение
-        main_layout.addLayout(layout)  # Основной контент
-        self.setLayout(main_layout)
-
-    def add_slider(self, layout, text):
+    def add_slider(self, layout, text, default_value=50):
         """Функция для добавления ползунка с подписью"""
         row = QHBoxLayout()
         label = QLabel(text)
@@ -104,7 +104,7 @@ class SettingsScreen(QWidget):
         slider = QSlider(Qt.Horizontal)
         slider.setMinimum(0)
         slider.setMaximum(100)
-        slider.setValue(50)  # По умолчанию среднее значение
+        slider.setValue(default_value)  # Устанавливаем значение по умолчанию
         slider.setFixedSize(300, 30)
         slider.setStyleSheet("""
             QSlider::groove:horizontal {
@@ -134,11 +134,9 @@ class SettingsScreen(QWidget):
         """
         Переключает между оконным и полноэкранным режимами.
         """
-        if state == Qt.Checked:
-            self.parent().showFullScreen()  # Полноэкранный режим
-        else:
-            self.parent().showNormal()  # Оконный режим
-            self.parent().setFixedSize(1920, 1080)  # Устанавливаем фиксированный размер
+        game_engine = self.parent().parent()  # Получаем ссылку на GameEngine
+        if game_engine:
+            game_engine.toggle_fullscreen(state == Qt.Checked)
 
     def set_music_volume(self, value):
         """
@@ -151,5 +149,4 @@ class SettingsScreen(QWidget):
         """
         Устанавливает громкость звуков.
         """
-        # Здесь можно добавить код для установки громкости звуков, если это необходимо
         print(f"Громкость звуков изменена: {value}")

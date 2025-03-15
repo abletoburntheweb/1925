@@ -44,6 +44,13 @@ class GameScreen(QWidget):
         self.dialogues = []
         self.current_dialogue_index = 0
 
+        # Слой для отображения персонажей
+        self.character_layer = QLabel(self)
+        self.character_layer.setAlignment(Qt.AlignCenter)
+        self.character_layer.setFixedSize(1920, 1080)  # Фиксируем размер
+        self.layout.addWidget(self.character_layer)
+        self.character_layer.lower()  # Перемещаем слой персонажей под текст
+
         self.text_container.show()
 
     def say(self, character, text):
@@ -153,3 +160,30 @@ class GameScreen(QWidget):
         if status == QMediaPlayer.EndOfMedia and music_player:
             music_player.setPosition(0)
             music_player.play()
+
+    def show_character(self, character_name, position="center"):
+        """
+        Отображает персонажа на экране.
+        :param character_name: Имя файла изображения персонажа (без расширения).
+        :param position: Позиция персонажа ('left', 'center', 'right').
+        """
+        pixmap_path = f"assets/characters/{character_name}.png"
+        print(f"Загружаю персонажа: {pixmap_path}")
+        pixmap = QPixmap(pixmap_path)
+        if pixmap.isNull():
+            print(f"Ошибка загрузки изображения персонажа: {pixmap_path}")
+            return
+
+        # Устанавливаем позицию персонажа
+        scaled_pixmap = pixmap.scaledToHeight(800, Qt.SmoothTransformation)  # Масштабируем изображение
+        self.character_layer.setPixmap(scaled_pixmap)
+
+        if position == "left":
+            self.character_layer.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
+        elif position == "right":
+            self.character_layer.setAlignment(Qt.AlignRight | Qt.AlignBottom)
+        else:
+            self.character_layer.setAlignment(Qt.AlignCenter | Qt.AlignBottom)
+
+        self.character_layer.show()
+        self.character_layer.raise_()

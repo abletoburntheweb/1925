@@ -1,5 +1,3 @@
-# engine/screens/main_menu.py
-
 from PyQt5.QtWidgets import QWidget, QPushButton, QLabel
 from PyQt5.QtGui import QFont, QMovie, QPixmap
 from PyQt5.QtCore import Qt, QUrl
@@ -95,4 +93,3 @@ class MainMenu(QWidget):
         if not self.settings_screen:
             self.settings_screen = SettingsScreen(self, self.music_player)  # Передаем music_player
         self.settings_screen.show()
-

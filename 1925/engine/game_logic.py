@@ -70,6 +70,16 @@ class GameEngine(QStackedWidget):
         # Закрытие игры
         self.close()
 
+    def toggle_fullscreen(self, fullscreen):
+        """
+        Переключает между полноэкранным и оконным режимами.
+        """
+        if fullscreen:
+            self.showFullScreen()  # Полноэкранный режим
+        else:
+            self.showNormal()  # Оконный режим
+            self.setFixedSize(1920, 1080)  # Устанавливаем фиксированный размер
+
 # Глобальные функции для использования в скриптах
 def say(character, text):
     game_engine.currentWidget().say(character, text)
@@ -79,6 +89,9 @@ def show_scene(scene_name, effect="none"):
 
 def play_music(file_name, loop=False):
     game_engine.currentWidget().play_music(file_name, loop)
+
+def show_character(character_name, position="center"):
+    game_engine.currentWidget().show_character(character_name, position)
 
 def start_script(script_path):
     game_engine.start_script(script_path)

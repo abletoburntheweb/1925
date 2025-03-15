@@ -1,5 +1,6 @@
 # engine/scripts/chapter1.py
-from engine.game_logic import define_character, say, show_scene, play_music
+from engine.game_logic import define_character, say, show_scene, play_music, show_character
+
 
 def start():
     # Определяем персонажей
@@ -12,4 +13,7 @@ def start():
 
     # Повествование
     say(narrator, "В мире, где пороки общества кажутся повседневной нормой...")
+
+    # Показываем персонажа
+    show_character("man", position="left")
     say(police, "Вы не видели её сегодня?")
