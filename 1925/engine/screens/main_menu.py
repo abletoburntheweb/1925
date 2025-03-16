@@ -73,9 +73,10 @@ class MainMenu(QWidget):
         print("Музыка главного меню воспроизводится.")  # Отладка
 
     def on_resize(self, event):
-        """При изменении размеров окна подгоняем фон и заглушку."""
-        self.background_label.resize(event.size())  # Растягиваем фон
-        self.overlay_label.resize(event.size())  # Растягиваем заглушку
+        """Обрабатываем изменение размеров окна."""
+        if hasattr(self, "background_label") and self.background_label:
+            self.background_label.resize(event.size())  # Растягиваем фон
+            self.overlay_label.resize(event.size())  # Растягиваем заглушку
         super().resizeEvent(event)
 
     def start_new_game(self):
@@ -89,7 +90,11 @@ class MainMenu(QWidget):
         print("We in the rolling armour")
 
     def open_settings(self):
-        """Открывает окно настроек"""
+        """Открывает окно настроек поверх основного меню, не скрывая сайдбар"""
         if not self.settings_screen:
-            self.settings_screen = SettingsScreen(self, self.music_player)  # Передаем music_player
-        self.settings_screen.show()
+            self.settings_screen = SettingsScreen(self, self.music_player)  # Передаем parent и плеер
+            self.settings_screen.setParent(self)  # Делаем настройки частью главного окна
+            self.settings_screen.setGeometry(420, 0, 1500, 1080)  # Размещаем справа, оставляя сайдбар
+
+        self.settings_screen.raise_()  # Поднимаем окно настроек наверх
+        self.settings_screen.show()  # Отображаем

@@ -1,16 +1,17 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QStackedLayout
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QStackedLayout
+from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl
 from engine.effects import fade, dissolve
+from engine.screens.pause_menu import PauseMenu
 
 music_player = None
+
 
 class GameScreen(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-
         # Создаем главный стековый макет
         self.layout = QStackedLayout()
         self.setLayout(self.layout)
@@ -40,10 +41,13 @@ class GameScreen(QWidget):
         self.layout.addWidget(self.text_container)
         self.text_container.raise_()  # Поднимаем текстовой контейнер над textbox.png
 
+        self.character_labels = {}
+
         # Очередь реплик
         self.dialogues = []
         self.current_dialogue_index = 0
 
+        self.characters = {}
         # Слой для отображения персонажей
         self.character_layer = QLabel(self)
         self.character_layer.setAlignment(Qt.AlignCenter)
@@ -51,7 +55,66 @@ class GameScreen(QWidget):
         self.layout.addWidget(self.character_layer)
         self.character_layer.lower()  # Перемещаем слой персонажей под текст
 
+        # Меню паузы (используем готовый класс PauseMenu)
+        self.pause_menu = PauseMenu(parent=self)  # Создаем экземпляр PauseMenu
+        self.layout.addWidget(self.pause_menu)
+        self.pause_menu.hide()  # Скрываем меню паузы при старте
         self.text_container.show()
+
+    def create_button(self, text, callback):
+        """Создает кнопку с заданным текстом и обработчиком."""
+        button = QPushButton(text)
+        button.setFixedSize(300, 60)
+        button.setFont(QFont("Arial", 20))
+        button.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(50, 50, 50, 200);
+                color: white;
+                border: 2px solid white;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: rgba(80, 80, 80, 200);
+            }
+            QPushButton:pressed {
+                background-color: rgba(120, 120, 120, 200);
+            }
+        """)
+        button.clicked.connect(callback)
+        return button
+
+    def keyPressEvent(self, event):
+        """Обрабатывает нажатие клавиш."""
+        if event.key() == Qt.Key_Space:
+            print("Нажата клавиша пробел.")
+            self.show_next_dialogue()
+        elif event.key() == Qt.Key_Escape:
+            print("Нажата клавиша ESC.")
+            print(f"Видимость фонового слоя: {self.background_label.isVisible()}")
+            print(f"Видимость текстового контейнера: {self.text_container.isVisible()}")
+            print(f"Видимость слоя персонажей: {self.character_layer.isVisible()}")
+            print(f"Видимость меню паузы: {self.pause_menu.isVisible()}")
+
+            if self.pause_menu.isHidden():
+                print("Меню паузы скрыто. Показываем его.")
+                self.pause_menu.show()
+                self.pause_menu.raise_()  # Поднимаем меню паузы над всеми виджетами
+                print(f"Видимость меню паузы после show(): {self.pause_menu.isVisible()}")
+            else:
+                print("Меню паузы уже показано. Скрываем его.")
+                self.resume_game()
+    def resume_game(self):
+        """Продолжает игру (закрывает меню паузы)."""
+        self.pause_menu.hide()
+        self.text_container.show()
+        self.character_layer.show()
+
+    def exit_game(self):
+        """
+        Закрывает игру.
+        """
+        print("Завершение игры...")
+        self.close()
 
     def say(self, character, text):
         """Добавляет реплику в очередь для последовательного вывода."""
@@ -62,60 +125,51 @@ class GameScreen(QWidget):
             self.show_next_dialogue()
 
     def show_next_dialogue(self):
-        """Показывает следующую реплику из очереди."""
+        """Показывает следующую реплику или выполняет скрытие/показ персонажей."""
         if self.current_dialogue_index < len(self.dialogues):
-            # **Очищаем предыдущий текст**
+            command = self.dialogues[self.current_dialogue_index]
+
+            if command[0] == "__HIDE__":
+                character_name = command[1]
+                print(f"Скрываем персонажа: {character_name}")
+                if character_name in self.character_labels:
+                    self.character_labels[character_name].hide()
+                self.current_dialogue_index += 1
+                self.show_next_dialogue()
+                return
+
+            elif command[0] == "__SHOW__":
+                character_name, position = command[1], command[2]
+                print(f"Показываем персонажа: {character_name}")
+                self._actually_show_character(character_name, position)
+                self.current_dialogue_index += 1
+                self.show_next_dialogue()
+                return
+
+            # Очищаем предыдущий текст
             while self.text_layout.count():
                 widget = self.text_layout.takeAt(0).widget()
                 if widget:
                     widget.deleteLater()
 
-            # Получаем текущую реплику
-            character, text = self.dialogues[self.current_dialogue_index]
+            character, text = command
+            if character:
+                name_label = QLabel(f"<font color='{character.color}'><b>{character.name}</b></font>")
+                name_label.setAlignment(Qt.AlignLeft)
+                name_label.setStyleSheet(
+                    "font-size: 36px; font-family: 'Arial'; font-weight: bold; padding-bottom: 5px;")
+                self.text_layout.addWidget(name_label)
 
-            print(f"Отображаю реплику: {character.name}: {text}")
-
-            # QLabel для имени персонажа
-            name_label = QLabel(f"<font color='{character.color}'><b>{character.name}</b></font>")
-            name_label.setAlignment(Qt.AlignLeft)  # Имя выравниваем по левому краю
-            name_label.setStyleSheet(
-                "font-size: 36px;"  # Крупный шрифт для имени
-                "font-family: 'Arial';"
-                "font-weight: bold;"
-                "padding-bottom: 5px;"  # Маленький отступ перед текстом
-            )
-
-            # QLabel для текста персонажа
             text_label = QLabel(f"<font color='white'>{text}</font>")
             text_label.setWordWrap(True)
-            text_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)  # Текст тоже слева
+            text_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
             text_label.setStyleSheet(
-                "font-size: 32px;"
-                "font-family: 'Arial';"
-                "line-height: 1.4;"
-                "font-weight: bold;"
-                "padding-left: 10px;"  # Чуть сдвигаем текст, чтобы было красиво
-            )
-
-            # Добавление имени и текста персонажа в контейнер
-            self.text_layout.addWidget(name_label)
+                "font-size: 32px; font-family: 'Arial'; line-height: 1.4; font-weight: bold; padding-left: 10px;")
             self.text_layout.addWidget(text_label)
-            self.text_container.show()
-            self.text_container.raise_()
-            self.update()
 
-            print(f"Количество виджетов в text_layout: {self.text_layout.count()}")
-
-            # Переход к следующей реплике
             self.current_dialogue_index += 1
         else:
             print("Все реплики показаны.")
-
-    def keyPressEvent(self, event):
-        """Обрабатывает нажатие клавиш."""
-        if event.key() == Qt.Key_Space:
-            print("Нажата клавиша пробел.")
-            self.show_next_dialogue()
 
     def show_scene(self, scene_name, effect="none"):
         """Загружает фоновое изображение."""
@@ -163,27 +217,65 @@ class GameScreen(QWidget):
 
     def show_character(self, character_name, position="center"):
         """
-        Отображает персонажа на экране.
-        :param character_name: Имя файла изображения персонажа (без расширения).
-        :param position: Позиция персонажа ('left', 'center', 'right').
+        Добавляет команду показа персонажа в очередь событий.
+        Теперь персонажи появляются после диалога, а не сразу.
+        """
+        print(f"Добавляю команду показа персонажа: {character_name} ({position})")
+        self.dialogues.append(("__SHOW__", character_name, position))
+
+        if len(self.dialogues) == 1:  # Если очередь была пуста, запускаем обработку
+            self.show_next_dialogue()
+
+    def _actually_show_character(self, character_name, position="center"):
+        """
+        Реально добавляет персонажа на экран.
+        Этот метод вызывается из очереди команд.
         """
         pixmap_path = f"assets/characters/{character_name}.png"
         print(f"Загружаю персонажа: {pixmap_path}")
         pixmap = QPixmap(pixmap_path)
+
         if pixmap.isNull():
             print(f"Ошибка загрузки изображения персонажа: {pixmap_path}")
             return
 
-        # Устанавливаем позицию персонажа
-        scaled_pixmap = pixmap.scaledToHeight(800, Qt.SmoothTransformation)  # Масштабируем изображение
-        self.character_layer.setPixmap(scaled_pixmap)
-
-        if position == "left":
-            self.character_layer.setAlignment(Qt.AlignLeft | Qt.AlignBottom)
-        elif position == "right":
-            self.character_layer.setAlignment(Qt.AlignRight | Qt.AlignBottom)
+        # Если персонаж уже есть на экране, обновляем его изображение
+        if character_name in self.character_labels:
+            character_label = self.character_labels[character_name]
+            character_label.setPixmap(pixmap.scaledToHeight(800, Qt.SmoothTransformation))
+            character_label.show()
         else:
-            self.character_layer.setAlignment(Qt.AlignCenter | Qt.AlignBottom)
+            # Создаем нового персонажа
+            character_label = QLabel(self)
+            character_label.setPixmap(pixmap.scaledToHeight(800, Qt.SmoothTransformation))
+            character_label.setFixedSize(800, 1080)
+            character_label.setScaledContents(True)
 
-        self.character_layer.show()
-        self.character_layer.raise_()
+            # Устанавливаем позицию персонажа
+            if position == "left":
+                character_label.move(100, 200)
+            elif position == "right":
+                character_label.move(1200, 200)
+            else:
+                character_label.move(600, 200)
+
+            character_label.show()
+            self.character_labels[character_name] = character_label  # Сохраняем в словарь
+
+        self.background_label.lower()  # Фон всегда снизу
+        character_label.raise_()
+        self.pause_menu.raise_()
+
+    def hide_character(self, character_name):
+        """Добавляет скрытие персонажа в очередь, чтобы оно выполнялось после диалога."""
+        print(f"Добавляю команду скрытия персонажа: {character_name}")
+        self.dialogues.append(("__HIDE__", character_name))
+
+        if len(self.dialogues) == 1:  # Если очередь была пуста, запустить обработку
+            self.show_next_dialogue()
+
+    def clear_characters(self):
+        """Прячет всех персонажей."""
+        for character in self.characters.values():
+            character.hide()
+

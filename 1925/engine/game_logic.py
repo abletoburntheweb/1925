@@ -1,6 +1,6 @@
 # engine/screens/game_logic.py
 
-from PyQt5.QtWidgets import QStackedWidget, QWidget
+from PyQt5.QtWidgets import QStackedWidget, QWidget, QApplication
 from PyQt5.QtCore import Qt, QTimer
 from engine.screens.game_screen import GameScreen
 from engine.screens.main_menu import MainMenu
@@ -69,6 +69,7 @@ class GameEngine(QStackedWidget):
     def exit_game(self):
         # Закрытие игры
         self.close()
+        QApplication.quit()
 
     def toggle_fullscreen(self, fullscreen):
         """
@@ -92,6 +93,12 @@ def play_music(file_name, loop=False):
 
 def show_character(character_name, position="center"):
     game_engine.currentWidget().show_character(character_name, position)
+
+def hide_character(character_name):
+    game_engine.currentWidget().hide_character(character_name)
+
+def clear_characters():
+    game_engine.currentWidget().clear_characters()
 
 def start_script(script_path):
     game_engine.start_script(script_path)

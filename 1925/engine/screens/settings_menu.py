@@ -11,21 +11,22 @@ class SettingsScreen(QWidget):
         # Сохраняем ссылку на music_player
         self.music_player = music_player
 
-        # **Фон**
+        # **Фон (переносим вправо)**
         self.background_label = QLabel(self)
         pixmap = QPixmap("assets/png/settings_menu.png")  # Загружаем изображение
         if not pixmap.isNull():
             self.background_label.setPixmap(pixmap)
             self.background_label.setScaledContents(True)
-            self.background_label.setGeometry(0, 0, 1920, 1080)  # Устанавливаем фиксированные размеры
+            self.background_label.setGeometry(-420, 0, 1920, 1080)  # Смещаем вправо
         else:
             print("Ошибка загрузки фонового изображения settings_menu.png")
 
-        # **Создаём слой для элементов интерфейса**
+        # **Контейнер для элементов интерфейса (тоже справа)**
         self.content_widget = QWidget(self)
-        self.content_widget.setGeometry(0, 0, 1920, 1080)  # Фиксируем размеры контентного слоя
+        self.content_widget.setGeometry(-420, 0, 1920, 1080)  # Размещаем в правой части экрана
 
-        layout = QVBoxLayout(self.content_widget)  # Макет применяется к content_widget
+        layout = QVBoxLayout(self.content_widget)
+        layout.setAlignment(Qt.AlignRight)  # Выравниваем всё вправо
 
         # **Заголовок**
         title = QLabel("НАСТРОЙКИ")
@@ -55,10 +56,6 @@ class SettingsScreen(QWidget):
         current_music_volume = self.music_player.volume() if self.music_player else 50
         self.music_volume_slider = self.add_slider(right_column, "Громкость музыки", current_music_volume)
         self.sound_volume_slider = self.add_slider(right_column, "Громкость звуков (в разработке)", 50)
-
-        # **Подключаем слайдеры к функциям**
-        self.music_volume_slider.valueChanged.connect(self.set_music_volume)
-        self.sound_volume_slider.valueChanged.connect(self.set_sound_volume)
 
         # **Переключатель режима экрана**
         self.fullscreen_checkbox = QCheckBox("Полноэкранный режим")
