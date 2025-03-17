@@ -125,11 +125,19 @@ class GameScreen(QWidget):
             self.show_next_dialogue()
 
     def show_next_dialogue(self):
-        """Показывает следующую реплику или выполняет скрытие/показ персонажей."""
+        """Показывает следующую реплику или выполняет команды."""
         if self.current_dialogue_index < len(self.dialogues):
             command = self.dialogues[self.current_dialogue_index]
 
-            if command[0] == "__HIDE__":
+            if command[0] == "__SCENE__":
+                scene_name, effect = command[1], command[2]
+                print(f"Меняем сцену на: {scene_name}")
+                self._actually_show_scene(scene_name, effect)
+                self.current_dialogue_index += 1
+                self.show_next_dialogue()
+                return
+
+            elif command[0] == "__HIDE__":
                 character_name = command[1]
                 print(f"Скрываем персонажа: {character_name}")
                 if character_name in self.character_labels:
@@ -172,15 +180,23 @@ class GameScreen(QWidget):
             print("Все реплики показаны.")
 
     def show_scene(self, scene_name, effect="none"):
-        """Загружает фоновое изображение."""
+        """Добавляет команду смены сцены в очередь диалогов."""
+        print(f"Добавляю команду смены сцены: {scene_name} ({effect})")
+        self.dialogues.append(("__SCENE__", scene_name, effect))
+
+        if len(self.dialogues) == 1:  # Если очередь была пуста, запустить обработку
+            self.show_next_dialogue()
+
+    def _actually_show_scene(self, scene_name, effect="none"):
+        """Реально загружает фоновое изображение."""
         pixmap_path = f"assets/backgrounds/{scene_name}.png"
         print(f"Загружаю фон: {pixmap_path}")
         pixmap = QPixmap(pixmap_path)
+
         if pixmap.isNull():
             print(f"Ошибка загрузки изображения: {pixmap_path}")
             return
 
-        # Добавляем изображение в фон
         self.background_label.setPixmap(pixmap)
         self.background_label.setScaledContents(True)
 
