@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl
 from engine.effects import fade, dissolve
+from engine.screens.dialog_history_screen import DialogHistoryScreen
 from engine.screens.pause_menu import PauseMenu
 
 music_player = None
@@ -27,14 +28,14 @@ class GameScreen(QWidget):
 
         # Фон текстового блока (textbox.png)
         self.textbox_label = QLabel(self.text_container)
-        self.textbox_label.setPixmap(QPixmap("assets/png/textbox.png"))
+        self.textbox_label.setPixmap(QPixmap("assets/png/textbox2.png"))
         self.textbox_label.setAlignment(Qt.AlignBottom)
-        self.textbox_label.setFixedSize(1920, 1080)  # Фиксируем размер фона
+        self.textbox_label.adjustSize()  # Фиксируем размер фона
 
         # Контейнер для текста (располагается поверх textbox.png)
         self.text_layout = QVBoxLayout(self.text_container)
         self.text_layout.setAlignment(Qt.AlignBottom)
-        self.text_layout.setContentsMargins(500, 0, 500, 100)  # Отступы для центрирования
+        self.text_layout.setContentsMargins(500, 0, 500, 200)  # Отступы для центрирования
         self.text_container.setLayout(self.text_layout)
 
         # Добавляем контейнер текста в макет
@@ -54,6 +55,19 @@ class GameScreen(QWidget):
         self.character_layer.setFixedSize(1920, 1080)  # Фиксируем размер
         self.layout.addWidget(self.character_layer)
         self.character_layer.lower()  # Перемещаем слой персонажей под текст
+
+        # Основные элементы (например, текст диалога)
+        self.dialogue_label = QLabel(self)
+        self.dialogue_label.setGeometry(200, 800, 1520, 200)
+        self.dialogue_label.setStyleSheet("font-size: 32px; color: white;")
+
+        # История диалогов (хранение)
+        self.dialogue_history = []
+
+        # Экран истории
+        self.history_screen = DialogHistoryScreen(parent=self)
+        self.layout.addWidget(self.history_screen)
+        self.history_screen.hide()  # Изначально скрываем экран истории
 
         # Меню паузы (используем готовый класс PauseMenu)
         self.pause_menu = PauseMenu(parent=self)  # Создаем экземпляр PauseMenu
@@ -87,21 +101,14 @@ class GameScreen(QWidget):
         """Обрабатывает нажатие клавиш."""
         if event.key() == Qt.Key_Space:
             print("Нажата клавиша пробел.")
-            self.show_next_dialogue()
+            if not self.history_screen.isVisible():
+                self.show_next_dialogue()
         elif event.key() == Qt.Key_Escape:
             print("Нажата клавиша ESC.")
-            print(f"Видимость фонового слоя: {self.background_label.isVisible()}")
-            print(f"Видимость текстового контейнера: {self.text_container.isVisible()}")
-            print(f"Видимость слоя персонажей: {self.character_layer.isVisible()}")
-            print(f"Видимость меню паузы: {self.pause_menu.isVisible()}")
-
             if self.pause_menu.isHidden():
-                print("Меню паузы скрыто. Показываем его.")
                 self.pause_menu.show()
-                self.pause_menu.raise_()  # Поднимаем меню паузы над всеми виджетами
-                print(f"Видимость меню паузы после show(): {self.pause_menu.isVisible()}")
+                self.pause_menu.raise_()
             else:
-                print("Меню паузы уже показано. Скрываем его.")
                 self.resume_game()
     def resume_game(self):
         """Продолжает игру (закрывает меню паузы)."""
@@ -129,6 +136,13 @@ class GameScreen(QWidget):
         if self.current_dialogue_index < len(self.dialogues):
             command = self.dialogues[self.current_dialogue_index]
 
+            # Очищаем предыдущий текст
+            while self.text_layout.count():
+                widget = self.text_layout.takeAt(0).widget()
+                if widget:
+                    widget.deleteLater()
+
+            # Обработка команд
             if command[0] == "__SCENE__":
                 scene_name, effect = command[1], command[2]
                 print(f"Меняем сцену на: {scene_name}")
@@ -136,7 +150,6 @@ class GameScreen(QWidget):
                 self.current_dialogue_index += 1
                 self.show_next_dialogue()
                 return
-
             elif command[0] == "__HIDE__":
                 character_name = command[1]
                 print(f"Скрываем персонажа: {character_name}")
@@ -145,7 +158,6 @@ class GameScreen(QWidget):
                 self.current_dialogue_index += 1
                 self.show_next_dialogue()
                 return
-
             elif command[0] == "__SHOW__":
                 character_name, position = command[1], command[2]
                 print(f"Показываем персонажа: {character_name}")
@@ -154,25 +166,29 @@ class GameScreen(QWidget):
                 self.show_next_dialogue()
                 return
 
-            # Очищаем предыдущий текст
-            while self.text_layout.count():
-                widget = self.text_layout.takeAt(0).widget()
-                if widget:
-                    widget.deleteLater()
-
+            # Добавляем текст
             character, text = command
-            if character:
+            if character and character.name:
                 name_label = QLabel(f"<font color='{character.color}'><b>{character.name}</b></font>")
                 name_label.setAlignment(Qt.AlignLeft)
                 name_label.setStyleSheet(
-                    "font-size: 36px; font-family: 'Arial'; font-weight: bold; padding-bottom: 5px;")
+                    "font-size: 36px;"
+                    "font-family: 'Arial';"
+                    "font-weight: bold;"
+                    "padding-bottom: 5px;"
+                )
                 self.text_layout.addWidget(name_label)
 
             text_label = QLabel(f"<font color='white'>{text}</font>")
             text_label.setWordWrap(True)
             text_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
             text_label.setStyleSheet(
-                "font-size: 32px; font-family: 'Arial'; line-height: 1.4; font-weight: bold; padding-left: 10px;")
+                "font-size: 32px;"
+                "font-family: 'Arial';"
+                "line-height: 1.4;"
+                "font-weight: bold;"
+                "padding-left: 10px;"
+            )
             self.text_layout.addWidget(text_label)
 
             self.current_dialogue_index += 1
@@ -184,7 +200,7 @@ class GameScreen(QWidget):
         print(f"Добавляю команду смены сцены: {scene_name} ({effect})")
         self.dialogues.append(("__SCENE__", scene_name, effect))
 
-        if len(self.dialogues) == 1:  # Если очередь была пуста, запустить обработку
+        if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
             self.show_next_dialogue()
 
     def _actually_show_scene(self, scene_name, effect="none"):
@@ -207,6 +223,25 @@ class GameScreen(QWidget):
             dissolve(self.background_label)
 
         self.update()
+
+    def log_dialogue(self, character, text):
+        """Сохраняем реплику в историю диалогов."""
+        self.dialogue_history.append((character, text))
+
+    def mousePressEvent(self, event):
+        """Обрабатывает нажатие мыши."""
+        if event.button() == Qt.RightButton:
+            print("Нажата правая кнопка мыши.")
+            if self.history_screen.isVisible():
+                self.history_screen.hide()  # Скрываем экран истории
+            else:
+                # Фильтруем только диалоги (пропускаем команды)
+                filtered_dialogues = [
+                    dialogue for dialogue in self.dialogues[:self.current_dialogue_index]
+                    if not (isinstance(dialogue[0], str) and dialogue[0].startswith("__"))
+                ]
+                self.history_screen.show_history(filtered_dialogues)
+                self.history_screen.raise_()  # Поднимаем экран истории над всеми виджетами
 
     def play_music(self, file_name, loop=False):
         """Воспроизводит музыку в игре."""
