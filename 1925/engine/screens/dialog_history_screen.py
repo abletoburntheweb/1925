@@ -39,11 +39,11 @@ class DialogHistoryScreen(QWidget):
     def add_dialogue(self, character, text):
         """Добавляет реплику в историю."""
         if character and character.name:
-            name_text = f"<font color='{character.color}'>{character.name}</font>"
+            name_text = f"<font color='{character.color}'>{character.name}</font>: "
         else:
-            name_text = "   "
+            name_text = ""
 
-        dialogue_text = f"{name_text}: {text}"
+        dialogue_text = f"{name_text}{text}"
         label = QLabel(dialogue_text, self)
         label.setFont(QFont("Arial", 24))
         label.setStyleSheet("""
@@ -52,6 +52,7 @@ class DialogHistoryScreen(QWidget):
            """)
         label.setWordWrap(True)
         self.history_layout.addWidget(label)
+
     def update_history(self, history):
         """
         Обновляет историю диалогов.
@@ -70,15 +71,15 @@ class DialogHistoryScreen(QWidget):
             self.history_layout.addWidget(label)
         else:
             for character, text in history:
-                name_text = f"<b>{character.name if character and character.name else '   '}:</b> {text}"
-                label = QLabel(name_text, self)
+                if character and character.name:
+                    name_text = f"<font color='{character.color}'><b>{character.name}</b></font>: "
+                else:
+                    name_text = ""
+
+                dialogue_text = f"{name_text}{text}"
+                label = QLabel(dialogue_text, self)
                 label.setFont(QFont("Arial", 24))
-                label.setStyleSheet("""
-                    color: white;
-                    padding: 10px;
-                    background-color: rgba(0, 0, 0, 150);
-                    border-radius: 5px;
-                """)
+                label.setStyleSheet("color: white; padding: 10px;")
                 label.setWordWrap(True)
                 self.history_layout.addWidget(label)
 
@@ -94,3 +95,5 @@ class DialogHistoryScreen(QWidget):
     def hide_history(self):
         """Скрывает экран истории."""
         self.hide()
+
+

@@ -74,6 +74,7 @@ class GameScreen(QWidget):
         self.layout.addWidget(self.pause_menu)
         self.pause_menu.hide()  # Скрываем меню паузы при старте
         self.text_container.show()
+        self.character_layer.show()
 
     def create_button(self, text, callback):
         """Создает кнопку с заданным текстом и обработчиком."""
@@ -229,19 +230,22 @@ class GameScreen(QWidget):
         self.dialogue_history.append((character, text))
 
     def mousePressEvent(self, event):
-        """Обрабатывает нажатие мыши."""
-        if event.button() == Qt.RightButton:
+        """Обрабатывает нажатие мыши для перехода к следующему диалогу."""
+        if event.button() == Qt.LeftButton:
+            print("Нажата левая кнопка мыши.")
+            if not self.history_screen.isVisible():
+                self.show_next_dialogue()
+        elif event.button() == Qt.RightButton:
             print("Нажата правая кнопка мыши.")
             if self.history_screen.isVisible():
-                self.history_screen.hide()  # Скрываем экран истории
+                self.history_screen.hide()
             else:
-                # Фильтруем только диалоги (пропускаем команды)
                 filtered_dialogues = [
                     dialogue for dialogue in self.dialogues[:self.current_dialogue_index]
                     if not (isinstance(dialogue[0], str) and dialogue[0].startswith("__"))
                 ]
                 self.history_screen.show_history(filtered_dialogues)
-                self.history_screen.raise_()  # Поднимаем экран истории над всеми виджетами
+                self.history_screen.raise_()
 
     def play_music(self, file_name, loop=False):
         """Воспроизводит музыку в игре."""
@@ -278,44 +282,36 @@ class GameScreen(QWidget):
             self.show_next_dialogue()
 
     def _actually_show_character(self, character_name, position="center"):
-        """
-        Реально добавляет персонажа на экран.
-        Этот метод вызывается из очереди команд.
-        """
+        """Реально добавляет персонажа на экран (ниже текста)."""
         pixmap_path = f"assets/characters/{character_name}.png"
         print(f"Загружаю персонажа: {pixmap_path}")
         pixmap = QPixmap(pixmap_path)
 
         if pixmap.isNull():
-            print(f"Ошибка загрузки изображения персонажа: {pixmap_path}")
+            print(f"Ошибка загрузки изображения: {pixmap_path}")
             return
 
-        # Если персонаж уже есть на экране, обновляем его изображение
         if character_name in self.character_labels:
             character_label = self.character_labels[character_name]
-            character_label.setPixmap(pixmap.scaledToHeight(800, Qt.SmoothTransformation))
-            character_label.show()
         else:
-            # Создаем нового персонажа
             character_label = QLabel(self)
-            character_label.setPixmap(pixmap.scaledToHeight(800, Qt.SmoothTransformation))
-            character_label.setFixedSize(800, 1080)
-            character_label.setScaledContents(True)
+            self.character_labels[character_name] = character_label
 
-            # Устанавливаем позицию персонажа
-            if position == "left":
-                character_label.move(100, 200)
-            elif position == "right":
-                character_label.move(1200, 200)
-            else:
-                character_label.move(600, 200)
+        # Устанавливаем изображение персонажа
+        character_label.setPixmap(pixmap.scaledToHeight(800, Qt.SmoothTransformation))
+        character_label.setFixedSize(800, 1080)
+        character_label.setScaledContents(True)
 
-            character_label.show()
-            self.character_labels[character_name] = character_label  # Сохраняем в словарь
+        # Устанавливаем позицию персонажа
+        positions = {"left": 100, "right": 1200, "center": 600}
+        character_label.move(positions.get(position, 600), 200)
+        character_label.show()
 
-        self.background_label.lower()  # Фон всегда снизу
-        character_label.raise_()
-        self.pause_menu.raise_()
+        # Перемещаем слой персонажа под текст
+        self.character_layer.lower()  # Перемещаем все персонажи на задний план
+
+        # Обновляем отображение персонажа
+        character_label.raise_()  # Поднимем персонажа в пределах его слоя
 
     def hide_character(self, character_name):
         """Добавляет скрытие персонажа в очередь, чтобы оно выполнялось после диалога."""
