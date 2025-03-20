@@ -100,22 +100,17 @@ class GameScreen(QWidget):
 
     def keyPressEvent(self, event):
         """Обрабатывает нажатие клавиш."""
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key_Space:
+            print("Нажата клавиша пробел.")
+            if not self.history_screen.isVisible():
+                self.show_next_dialogue()
+        elif event.key() == Qt.Key_Escape:
             print("Нажата клавиша ESC.")
             if self.pause_menu.isHidden():
                 self.pause_menu.show()
                 self.pause_menu.raise_()
             else:
                 self.resume_game()
-            return  # Чтобы не блокировались другие нажатия ESC
-
-        if self.pause_menu.isVisible():
-            return  # Если меню паузы активно, блокируем остальные нажатия
-
-        if event.key() == Qt.Key_Space:
-            print("Нажата клавиша пробел.")
-            if not self.history_screen.isVisible():
-                self.show_next_dialogue()
     def resume_game(self):
         """Продолжает игру (закрывает меню паузы)."""
         self.pause_menu.hide()
@@ -236,9 +231,6 @@ class GameScreen(QWidget):
 
     def mousePressEvent(self, event):
         """Обрабатывает нажатие мыши для перехода к следующему диалогу."""
-        if self.pause_menu.isVisible():
-            return  # Если меню паузы активно, блокируем переход к следующему диалогу
-
         if event.button() == Qt.LeftButton:
             print("Нажата левая кнопка мыши.")
             if not self.history_screen.isVisible():
@@ -290,13 +282,13 @@ class GameScreen(QWidget):
             self.show_next_dialogue()
 
     def _actually_show_character(self, character_name, position="center"):
-        """Реально добавляет персонажа на экран, позади текстового контейнера."""
+        """Реально добавляет персонажа на экран (ниже текста)."""
         pixmap_path = f"assets/characters/{character_name}.png"
         print(f"Загружаю персонажа: {pixmap_path}")
         pixmap = QPixmap(pixmap_path)
 
         if pixmap.isNull():
-            print(f"Ошибка загрузки изображения персонажа: {pixmap_path}")
+            print(f"Ошибка загрузки изображения: {pixmap_path}")
             return
 
         if character_name in self.character_labels:
@@ -315,10 +307,11 @@ class GameScreen(QWidget):
         character_label.move(positions.get(position, 600), 200)
         character_label.show()
 
-        # Размещаем персонажей выше фона, но ниже текстового контейнера
-        character_label.raise_()
-        self.background_label.lower()  # Фон всегда остается на заднем плане
-        self.text_container.raise_()  # Поднимаем текстовый контейнер над персонажами
+        # Перемещаем слой персонажа под текст
+        self.character_layer.lower()  # Перемещаем все персонажи на задний план
+
+        # Обновляем отображение персонажа
+        character_label.raise_()  # Поднимем персонажа в пределах его слоя
 
     def hide_character(self, character_name):
         """Добавляет скрытие персонажа в очередь, чтобы оно выполнялось после диалога."""

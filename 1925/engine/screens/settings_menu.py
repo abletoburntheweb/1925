@@ -55,7 +55,6 @@ class SettingsScreen(QWidget):
         # **Правая колонка**
         current_music_volume = self.music_player.volume() if self.music_player else 50
         self.music_volume_slider = self.add_slider(right_column, "Громкость музыки", current_music_volume)
-        self.music_volume_slider.valueChanged.connect(self.set_music_volume)
         self.sound_volume_slider = self.add_slider(right_column, "Громкость звуков (в разработке)", 50)
 
         # **Переключатель режима экрана**
@@ -137,9 +136,10 @@ class SettingsScreen(QWidget):
             game_engine.toggle_fullscreen(state == Qt.Checked)
 
     def set_music_volume(self, value):
-        """Устанавливает громкость музыки."""
+        """
+        Устанавливает громкость музыки.
+        """
         if self.music_player is not None:
-            print(f"Изменение громкости музыки: {value}")  # Для отладки
             self.music_player.setVolume(value)
 
     def set_sound_volume(self, value):

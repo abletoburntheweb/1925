@@ -3,6 +3,7 @@ from PyQt5.QtGui import QFont, QMovie, QPixmap
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from engine.screens.settings_menu import SettingsScreen  # Импорт окна настроек
+from engine.screens.case_screen import CaseScreen  # Импортируем экран досье
 
 class MainMenu(QWidget):
     def __init__(self, game_engine):
@@ -55,6 +56,13 @@ class MainMenu(QWidget):
         settings_button.move(button_x, button_y)
         button_y += 60
 
+        dossier_button = QPushButton("ДОСЬЕ", self)  # СИГМА СИГМА СИГМА append new ФУТА МАКСИМ ФУТА
+        dossier_button.setFont(QFont("Arial", 24))
+        dossier_button.setStyleSheet("background-color: transparent; color: white;")
+        dossier_button.clicked.connect(self.open_case_screen)
+        dossier_button.move(button_x, button_y)
+        button_y += 60
+
         exit_button = QPushButton("ВЫХОД", self)
         exit_button.setFont(QFont("Arial", 24))
         exit_button.setStyleSheet("background-color: transparent; color: white;")
@@ -98,3 +106,8 @@ class MainMenu(QWidget):
 
         self.settings_screen.raise_()  # Поднимаем окно настроек наверх
         self.settings_screen.show()  # Отображаем
+
+    def open_case_screen(self):
+        case_screen = CaseScreen(self.game_engine)
+        self.game_engine.addWidget(case_screen)
+        self.game_engine.setCurrentWidget(case_screen)
