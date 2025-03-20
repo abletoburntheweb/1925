@@ -2,33 +2,35 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QLabel
 from PyQt5.QtGui import QFont, QMovie, QPixmap
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from engine.screens.settings_menu import SettingsScreen  # Импорт окна настроек
-from engine.screens.case_screen import CaseScreen  # Импортируем экран досье
+import json
+from engine.screens.settings_menu import SettingsScreen  # Окно настроек
+from engine.screens.case_screen import CaseScreen  # Экран досье
 
 class MainMenu(QWidget):
     def __init__(self, game_engine):
         super().__init__()
         self.game_engine = game_engine  # Ссылка на движок игры
-        self.music_player = None  # Добавляем переменную для музыки
-        self.settings_screen = None  # Переменная для окна настроек
+        self.music_player = QMediaPlayer()  # Музыкальный плеер
+        self.settings_screen = None  # Окно настроек
         self.init_ui()
-        self.play_music("menu_theme.mp3")  # Включаем музыку при загрузке меню
+        self.load_settings()  # Загружаем настройки перед воспроизведением музыки
+        self.play_music("menu_theme.mp3")
 
     def init_ui(self):
-        # **Фоновое изображение (анимированный GIF)**
+        # **Фон (GIF)**
         self.background_label = QLabel(self)
-        self.movie = QMovie("assets/backgrounds/windowgif.gif")  # Путь к GIF
+        self.movie = QMovie("assets/backgrounds/windowgif.gif")
         self.background_label.setMovie(self.movie)
-        self.movie.start()  # Запускаем анимацию
+        self.movie.start()
         self.background_label.setAlignment(Qt.AlignCenter)
 
-        # **Заглушка (градиентный PNG)**
+        # **Заглушка (PNG)**
         self.overlay_label = QLabel(self)
-        pixmap = QPixmap("assets/png/main_menu.png")  # Загружаем изображение
+        pixmap = QPixmap("assets/png/main_menu.png")
         self.overlay_label.setPixmap(pixmap)
-        self.overlay_label.setScaledContents(True)  # Растягиваем картинку
+        self.overlay_label.setScaledContents(True)
 
-        # **Обработка изменения размеров окна**
+        # **Обрабатываем изменение размеров окна**
         self.resizeEvent = self.on_resize
 
         # **Создание кнопок**
@@ -56,7 +58,7 @@ class MainMenu(QWidget):
         settings_button.move(button_x, button_y)
         button_y += 60
 
-        dossier_button = QPushButton("ДОСЬЕ", self)  # СИГМА СИГМА СИГМА append new ФУТА МАКСИМ ФУТА
+        dossier_button = QPushButton("ДОСЬЕ", self)
         dossier_button.setFont(QFont("Arial", 24))
         dossier_button.setStyleSheet("background-color: transparent; color: white;")
         dossier_button.clicked.connect(self.open_case_screen)
@@ -69,45 +71,59 @@ class MainMenu(QWidget):
         exit_button.clicked.connect(self.game_engine.exit_game)
         exit_button.move(button_x, button_y)
 
+    def load_settings(self):
+        """Загружает настройки из settings.json и применяет их."""
+        try:
+            with open("engine/settings.json", "r", encoding="utf-8") as file:
+                settings = json.load(file)
+        except FileNotFoundError:
+            settings = {"music_volume": 50, "fullscreen": False}
+
+        # Устанавливаем громкость музыки
+        self.music_player.setVolume(settings.get("music_volume", 50))
+
+        # Применяем полноэкранный режим
+        if settings.get("fullscreen", False):
+            self.game_engine.showFullScreen()
+        else:
+            self.game_engine.showNormal()
+
     def play_music(self, file_name):
         """Воспроизводит музыку в главном меню."""
-        if self.music_player is None:
-            self.music_player = QMediaPlayer()
-
         url = QUrl.fromLocalFile(f"assets/music/{file_name}")
-        print(f"Загружаю музыку: {file_name}")  # Отладочное сообщение
+        print(f"Загружаю музыку: {file_name}")
         self.music_player.setMedia(QMediaContent(url))
         self.music_player.play()
-        print("Музыка главного меню воспроизводится.")  # Отладка
+        print("Музыка главного меню воспроизводится.")
 
     def on_resize(self, event):
         """Обрабатываем изменение размеров окна."""
         if hasattr(self, "background_label") and self.background_label:
-            self.background_label.resize(event.size())  # Растягиваем фон
-            self.overlay_label.resize(event.size())  # Растягиваем заглушку
+            self.background_label.resize(event.size())
+            self.overlay_label.resize(event.size())
         super().resizeEvent(event)
 
     def start_new_game(self):
         """Запускает новую игру и останавливает музыку главного меню."""
-        if self.music_player is not None:  # Проверяем, что плеер существует
-            self.music_player.stop()  # Останавливаем воспроизведение музыки
-            print("Музыка главного меню остановлена.")  # Отладочное сообщение
-        self.game_engine.start_script("scripts.chapter1:start")  # Запускаем сценарий
+        self.music_player.stop()
+        print("Музыка главного меню остановлена.")
+        self.game_engine.start_script("scripts.chapter1:start")
 
     def load_game(self):
-        print("We in the rolling armour")
+        print("Загрузка игры...")
 
     def open_settings(self):
-        """Открывает окно настроек поверх основного меню, не скрывая сайдбар"""
+        """Открывает окно настроек поверх основного меню."""
         if not self.settings_screen:
-            self.settings_screen = SettingsScreen(self, self.music_player)  # Передаем parent и плеер
-            self.settings_screen.setParent(self)  # Делаем настройки частью главного окна
-            self.settings_screen.setGeometry(420, 0, 1500, 1080)  # Размещаем справа, оставляя сайдбар
+            self.settings_screen = SettingsScreen(self, self.music_player)
+            self.settings_screen.setParent(self)
+            self.settings_screen.setGeometry(420, 0, 1500, 1080)
 
-        self.settings_screen.raise_()  # Поднимаем окно настроек наверх
-        self.settings_screen.show()  # Отображаем
+        self.settings_screen.raise_()
+        self.settings_screen.show()
 
     def open_case_screen(self):
+        """Открывает экран досье."""
         case_screen = CaseScreen(self.game_engine)
         self.game_engine.addWidget(case_screen)
         self.game_engine.setCurrentWidget(case_screen)

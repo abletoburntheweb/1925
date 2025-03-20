@@ -1,58 +1,69 @@
 # engine/effects.py
 from PyQt5.QtCore import QPropertyAnimation, QEasingCurve, QPoint
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QGraphicsOpacityEffect
+
 
 def fade(widget, duration=500):
     """
-    Эффект затухания (появление элемента от прозрачного к непрозрачному).
-    :param widget: Виджет, к которому применяется эффект.
-    :param duration: Длительность анимации в миллисекундах.
+    Эффект плавного появления (затухания) элемента.
     """
-    animation = QPropertyAnimation(widget, b"windowOpacity")
+    effect = QGraphicsOpacityEffect(widget)  # Создаем эффект прозрачности
+    widget.setGraphicsEffect(effect)  # Применяем его к виджету
+
+    animation = QPropertyAnimation(effect, b"opacity")
     animation.setDuration(duration)
-    animation.setStartValue(0.0)  # Начальная прозрачность
-    animation.setEndValue(1.0)   # Конечная прозрачность
+    animation.setStartValue(0.0)  # Начинаем с полной прозрачности
+    animation.setEndValue(1.0)  # Завершаем с полной видимостью
+
+    widget.animation = animation  # Сохраняем анимацию в атрибуте объекта
     animation.start()
 
 def dissolve(widget, duration=500):
     """
     Эффект растворения (плавное появление элемента).
-    :param widget: Виджет, к которому применяется эффект.
-    :param duration: Длительность анимации в миллисекундах.
     """
-    animation = QPropertyAnimation(widget, b"pos")
+    effect = QGraphicsOpacityEffect(widget)
+    widget.setGraphicsEffect(effect)
+
+    animation = QPropertyAnimation(effect, b"opacity")
     animation.setDuration(duration)
     animation.setEasingCurve(QEasingCurve.InOutQuad)
-    animation.setStartValue(widget.pos())  # Начальная позиция
-    animation.setEndValue(widget.pos())    # Конечная позиция (можно изменить логику)
+    animation.setStartValue(0.0)  # Начинаем с полной прозрачности
+    animation.setEndValue(1.0)    # Завершаем с полной видимостью
+
+    widget.animation = animation
     animation.start()
 
 def slide_in_from_left(widget, duration=500):
     """
     Эффект "выезда" элемента слева.
-    :param widget: Виджет, к которому применяется эффект.
-    :param duration: Длительность анимации в миллисекундах.
     """
+    start_pos = QPoint(-widget.width(), widget.y())  # Начальная позиция за экраном слева
+    end_pos = widget.pos()  # Обычная позиция виджета
+
+    widget.move(start_pos)  # Устанавливаем начальную позицию за экраном
+
     animation = QPropertyAnimation(widget, b"pos")
     animation.setDuration(duration)
     animation.setEasingCurve(QEasingCurve.OutCubic)
-    start_pos = widget.pos() - QPoint(widget.width(), 0)  # Начальная позиция (слева за экраном)
-    end_pos = widget.pos()                               # Конечная позиция
     animation.setStartValue(start_pos)
     animation.setEndValue(end_pos)
+
+    widget.animation = animation
     animation.start()
 
 def slide_out_to_right(widget, duration=500):
     """
-    Эффект "выезда" элемента вправо.
-    :param widget: Виджет, к которому применяется эффект.
-    :param duration: Длительность анимации в миллисекундах.
+    Эффект "ухода" элемента вправо.
     """
+    start_pos = widget.pos()  # Начальная позиция
+    end_pos = QPoint(widget.width() + start_pos.x(), widget.y())  # Позиция за экраном справа
+
     animation = QPropertyAnimation(widget, b"pos")
     animation.setDuration(duration)
     animation.setEasingCurve(QEasingCurve.InCubic)
-    start_pos = widget.pos()                             # Начальная позиция
-    end_pos = widget.pos() + QPoint(widget.width(), 0)  # Конечная позиция (за экраном справа)
     animation.setStartValue(start_pos)
     animation.setEndValue(end_pos)
+
+    widget.animation = animation
     animation.start()
