@@ -66,6 +66,15 @@ class GameEngine(QStackedWidget):
         except Exception as e:
             print(f"Ошибка при запуске сценария: {e}")
 
+    def choice(options):
+        """
+        Добавляет команду выбора в очередь диалогов.
+        :param options: Список кортежей вида [("Текст выбора", "значение"), ...].
+        """
+        game_engine.currentWidget().dialogues.append(("__CHOICE__", options))
+        if len(game_engine.currentWidget().dialogues) == 1:
+            game_engine.currentWidget().show_next_dialogue()
+
     def exit_game(self):
         # Закрытие игры
         self.close()
@@ -102,6 +111,7 @@ def clear_characters():
 
 def start_script(script_path):
     game_engine.start_script(script_path)
-
+def choice(options):
+    return game_engine.currentWidget().show_choices(options)
 def exit_game():
     game_engine.exit_game()

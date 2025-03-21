@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QStackedLayout
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QStackedLayout, QApplication
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
@@ -42,6 +42,10 @@ class GameScreen(QWidget):
         self.layout.addWidget(self.text_container)
         self.text_container.raise_()  # Поднимаем текстовой контейнер над textbox.png
 
+        self.choice_container = None  # Контейнер для вариантов выбора
+        self.choice_result = None  # Хранит выбранный результат
+        self.choice_loop = None  # EventLoop для синхронного ожидания выбора
+
         self.character_labels = {}
 
         # Очередь реплик
@@ -49,6 +53,7 @@ class GameScreen(QWidget):
         self.current_dialogue_index = 0
 
         self.characters = {}
+
         # Слой для отображения персонажей
         self.character_layer = QLabel(self)
         self.character_layer.setAlignment(Qt.AlignCenter)
@@ -68,6 +73,14 @@ class GameScreen(QWidget):
         self.history_screen = DialogHistoryScreen(parent=self)
         self.layout.addWidget(self.history_screen)
         self.history_screen.hide()  # Изначально скрываем экран истории
+
+        self.choice_container = QWidget(self)
+        self.choice_layout = QVBoxLayout()
+        self.choice_container.setLayout(self.choice_layout)
+        self.choice_container.setFixedSize(1920, 1080)  # Фиксируем размер контейнера
+        self.choice_container.hide()  # Изначально скрываем контейнер
+
+        self.layout.addWidget(self.choice_container)
 
         # Меню паузы (используем готовый класс PauseMenu)
         self.pause_menu = PauseMenu(parent=self)  # Создаем экземпляр PauseMenu
@@ -130,15 +143,15 @@ class GameScreen(QWidget):
         self.close()
 
     def say(self, character, text):
-        """Добавляет реплику в очередь для последовательного вывода."""
         print(f"Добавлена реплика: {text}")
         self.dialogues.append((character, text))
-
         if len(self.dialogues) == 1:
             self.show_next_dialogue()
 
     def show_next_dialogue(self):
-        """Показывает следующую реплику или выполняет команды."""
+        """
+        Показывает следующую реплику или выполняет команды.
+        """
         if self.current_dialogue_index < len(self.dialogues):
             command = self.dialogues[self.current_dialogue_index]
 
@@ -149,57 +162,68 @@ class GameScreen(QWidget):
                     widget.deleteLater()
 
             # Обработка команд
-            if command[0] == "__SCENE__":
-                scene_name, effect = command[1], command[2]
-                print(f"Меняем сцену на: {scene_name}")
-                self._actually_show_scene(scene_name, effect)
-                self.current_dialogue_index += 1
-                self.show_next_dialogue()
-                return
-            elif command[0] == "__HIDE__":
-                character_name = command[1]
-                print(f"Скрываем персонажа: {character_name}")
-                if character_name in self.character_labels:
-                    self.character_labels[character_name].hide()
-                self.current_dialogue_index += 1
-                self.show_next_dialogue()
-                return
-            elif command[0] == "__SHOW__":
-                character_name, position = command[1], command[2]
-                print(f"Показываем персонажа: {character_name}")
-                self._actually_show_character(character_name, position)
-                self.current_dialogue_index += 1
-                self.show_next_dialogue()
-                return
+            if isinstance(command, tuple) and len(command) > 0:
+                command_type = command[0]
 
-            # Добавляем текст
-            character, text = command
-            if character and character.name:
-                name_label = QLabel(f"<font color='{character.color}'><b>{character.name}</b></font>")
-                name_label.setAlignment(Qt.AlignLeft)
-                name_label.setStyleSheet(
-                    "font-size: 36px;"
-                    "font-family: 'Arial';"
-                    "font-weight: bold;"
-                    "padding-bottom: 5px;"
-                )
-                self.text_layout.addWidget(name_label)
+                if command_type == "__SCENE__":
+                    # Команда смены сцены
+                    scene_name, effect = command[1], command[2]
+                    print(f"Меняем сцену на: {scene_name}")
+                    self._actually_show_scene(scene_name, effect)
+                    self.current_dialogue_index += 1
+                    self.show_next_dialogue()
+                    return
 
-            text_label = QLabel(f"<font color='white'>{text}</font>")
-            text_label.setWordWrap(True)
-            text_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-            text_label.setStyleSheet(
-                "font-size: 32px;"
-                "font-family: 'Arial';"
-                "line-height: 1.4;"
-                "font-weight: bold;"
-                "padding-left: 10px;"
-            )
-            self.text_layout.addWidget(text_label)
+                elif command_type == "__SHOW__":
+                    # Команда показа персонажа
+                    character_name, position = command[1], command[2]
+                    print(f"Показываем персонажа: {character_name}")
+                    self._actually_show_character(character_name, position)
+                    self.current_dialogue_index += 1
+                    self.show_next_dialogue()
+                    return
 
-            self.current_dialogue_index += 1
+                elif command_type == "__HIDE__":
+                    # Команда скрытия персонажа
+                    character_name = command[1]
+                    print(f"Скрываем персонажа: {character_name}")
+                    if character_name in self.character_labels:
+                        self.character_labels[character_name].hide()
+                    self.current_dialogue_index += 1
+                    self.show_next_dialogue()
+                    return
+
+                else:
+                    # Реплика персонажа
+                    character, text = command
+                    if character and character.name:
+                        name_label = QLabel(f"<font color='{character.color}'><b>{character.name}:</b></font>")
+                        name_label.setAlignment(Qt.AlignLeft)
+                        name_label.setStyleSheet(
+                            "font-size: 36px;"
+                            "font-family: 'Arial';"
+                            "font-weight: bold;"
+                            "padding-bottom: 5px;"
+                        )
+                        self.text_layout.addWidget(name_label)
+
+                    text_label = QLabel(f"<font color='white'>{text}</font>")
+                    text_label.setWordWrap(True)
+                    text_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+                    text_label.setStyleSheet(
+                        "font-size: 32px;"
+                        "font-family: 'Arial';"
+                        "line-height: 1.4;"
+                        "font-weight: bold;"
+                        "padding-left: 10px;"
+                    )
+                    self.text_layout.addWidget(text_label)
+
+                    self.current_dialogue_index += 1
         else:
             print("Все реплики показаны.")
+            if hasattr(self, "on_intro_end") and callable(self.on_intro_end):
+                self.on_intro_end()  # Вызываем функцию завершения предисловия
 
     def show_scene(self, scene_name, effect="none"):
         """Добавляет команду смены сцены в очередь диалогов."""
@@ -344,3 +368,63 @@ class GameScreen(QWidget):
         for character in self.characters.values():
             character.hide()
 
+    def show_choices(self, options):
+        """
+        Отображает варианты выбора на экране с использованием namebox.png в качестве фона.
+        :param options: Список кортежей вида [("Текст выбора", "значение"), ...].
+        """
+        print("Отображаю варианты...")
+
+        # Очищаем предыдущие выборы
+        while self.choice_layout.count():
+            widget = self.choice_layout.takeAt(0).widget()
+            if widget:
+                widget.deleteLater()
+
+        # Фон для выбора
+        self.choice_bg = QLabel(self.choice_container)
+        self.choice_bg.setPixmap(QPixmap("assets/png/namebox.png"))  # Используем namebox.png
+        self.choice_bg.setScaledContents(True)
+        self.choice_bg.setFixedSize(800, len(options) * 80 + 120)  # Делаем размер адаптивным
+        self.choice_bg.move(0, 0)  # Устанавливаем фон в начало контейнера
+
+        # Добавляем фон в контейнер
+        self.choice_layout.addWidget(self.choice_bg)
+
+        # Создаем кнопки для каждого варианта
+        for text, value in options:
+            button = QPushButton(text)
+            button.setFixedSize(600, 60)
+            button.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(50, 50, 50, 200);
+                    color: white;
+                    font-size: 24px;
+                    border: 2px solid white;
+                    border-radius: 10px;
+                    padding: 10px;
+                    text-align: left;
+                }
+                QPushButton:hover {
+                    background-color: rgba(100, 100, 100, 200);
+                }
+                QPushButton:pressed {
+                    background-color: rgba(150, 150, 150, 200);
+                }
+            """)
+            button.clicked.connect(lambda _, v=value: self._on_choice_selected(v))
+            self.choice_layout.addWidget(button)
+
+        # Показываем контейнер выборов
+        self.choice_container.show()
+        self.choice_container.raise_()
+
+    def _on_choice_selected(self, value):
+        """
+        Обработчик выбора варианта.
+        :param value: Значение выбранного варианта.
+        """
+        print(f"Выбран вариант: {value}")
+        self.choice_container.hide()  # Скрываем контейнер выборов
+        self.current_dialogue_index += 1
+        self.show_next_dialogue(choice_result=value)  # Продолжаем диалог с выбранным значением

@@ -1,4 +1,6 @@
-from engine.game_logic import define_character, say, show_scene, play_music, show_character, hide_character
+from engine.game_logic import define_character, say, show_scene, play_music, show_character, hide_character, \
+    start_script, game_engine
+
 
 def start():
     narrator = define_character(None, color="#c8c8ff")
@@ -38,3 +40,5 @@ def start():
 
     say(narrator, "Что же произошло на самом деле? Возможно, это была жена, уставшая от предательства, или любовница, готовая на крайние меры. Или, может быть, это был тщательно спланированный спектакль, чтобы разрушить идеальный фасад их жизни?")
     say(narrator, "В этой паутине интриг и страстей, где каждый может стать жертвой или преступником, истина остается скрытой, как луна за облаками. Ночь, полная загадок.")
+
+    game_engine.currentWidget().on_intro_end = lambda: start_script("scripts.chapter1:start")
