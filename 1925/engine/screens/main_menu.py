@@ -107,7 +107,7 @@ class MainMenu(QWidget):
         """Запускает новую игру и останавливает музыку главного меню."""
         self.music_player.stop()
         print("Музыка главного меню остановлена.")
-        self.game_engine.start_script("scripts.chapter1:start")
+        self.game_engine.start_script("scripts.intro:start")
 
     def load_game(self):
         print("Загрузка игры...")

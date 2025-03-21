@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl
-from engine.effects import fade, dissolve
+from engine.effects import fade, dissolve, hpunch, slide_out_to_right
 from engine.screens.dialog_history_screen import DialogHistoryScreen
 from engine.screens.pause_menu import PauseMenu
 
@@ -210,23 +210,34 @@ class GameScreen(QWidget):
             self.show_next_dialogue()
 
     def _actually_show_scene(self, scene_name, effect="none"):
-        """Реально загружает фоновое изображение."""
+        """Реально загружает фоновое изображение или отображает его название на сером фоне, если изображение не найдено."""
         pixmap_path = f"assets/backgrounds/{scene_name}.png"
         print(f"Загружаю фон: {pixmap_path}")
         pixmap = QPixmap(pixmap_path)
 
         if pixmap.isNull():
             print(f"Ошибка загрузки изображения: {pixmap_path}")
+
+            # Если изображение не найдено, создаем серый фон
+            self.background_label.setStyleSheet("background-color: gray; color: white; font-size: 48px;")
+            self.background_label.setText(f"Фон не найден:\n{scene_name}")
+            self.background_label.setAlignment(Qt.AlignCenter)
+            self.background_label.show()
             return
 
         self.background_label.setPixmap(pixmap)
         self.background_label.setScaledContents(True)
+        self.background_label.setStyleSheet("")  # Сбрасываем стиль, если фон был серым
 
         # Применяем эффект
         if effect == "fade":
             fade(self.background_label)
         elif effect == "dissolve":
             dissolve(self.background_label)
+        elif effect == "hpunch":
+            hpunch(self.background_label)
+        elif effect == "slide_out_to_right":
+            slide_out_to_right(self.background_label)
 
         self.update()
 
