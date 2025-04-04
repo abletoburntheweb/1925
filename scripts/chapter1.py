@@ -1,4 +1,4 @@
-from engine.game_logic import define_character, say, show_scene, play_music, stop_music, play_sfx, show_character, hide_character, choice
+from engine.game_logic import define_character, say, show_scene, play_music, show_character, hide_character, choice
 
 narrator = define_character(None, color="#c8c8ff")
 detective = define_character("Детектив", color="#ffcccb")
@@ -8,7 +8,7 @@ alan = define_character("Алан Хант", color="#ffcccb")
 def scene1():
 
     show_scene("window", effect="fade")
-    play_music("sample3.mp3", loop=True)
+    play_music("tense_music.mp3", loop=True)
 
     say(detective, "Господин, вам не кажется, что всё в нашем мире циклично?")
 
@@ -16,12 +16,11 @@ def scene1():
     say(francis, "Что… что вы имеете в виду?")
     say(francis, "Давайте, пожалуйста, приступим к рассмотрению моего заявления.")
 
-    stop_music()
     say(narrator, "Парень отчаянно пытался изобразить уверенность, но его поза выдавала страх.")
 
     show_scene("newspaper", effect="hpunch")
     say(narrator, "Мужчина швырнул газету на стол. На развороте красовался заголовок о ночном убийстве.")
-    play_music("sample1.mp3", loop=True)
+
     say(francis, "По-моему, вы переходите все границы, господин детектив!")
 
     say(detective, "Я считаю, что всё, что происходит в данный момент, произойдёт снова. История мира — это циклы.")

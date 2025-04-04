@@ -3,13 +3,10 @@ from engine.screens.settings_menu import SettingsScreen
 from PyQt5.QtGui import QFont, QPixmap
 
 
-music_player = None
-
 class PauseMenu(QWidget):
-    def __init__(self, game_engine):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.setWindowTitle("Пауза")
-        self.game_engine = game_engine
         self.setFixedSize(1920, 1080)
 
         self.background_label = QLabel(self)
@@ -63,17 +60,7 @@ class PauseMenu(QWidget):
         print("Сохранение игры...")
 
     def exit_game(self):
-        global music_player
-        if music_player:
-            music_player.stop()
-
-        self.game_engine.setCurrentWidget(self.game_engine.main_menu)
+        self.parent().exit_game()
 
     def settings(self):
-        global music_player
-        settings_screen = SettingsScreen(self, music_player)
-        settings_screen.setParent(self)
-        settings_screen.setGeometry(420, 0, 1500, 1080)
-
-        settings_screen.raise_()
-        settings_screen.show()
+        self.parent().settings()

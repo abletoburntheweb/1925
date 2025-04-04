@@ -16,7 +16,7 @@ class MainMenu(QWidget):
         self.load_settings()
         self.settings_screen = None
         self.init_ui()
-        self.play_music("menu_theme.mp3")
+        self.play_music("main_menu.mp3")
 
     def init_ui(self):
         self.background_label = QLabel(self)
@@ -109,4 +109,4 @@ class MainMenu(QWidget):
     def showEvent(self, event):
         super().showEvent(event)
         if self.music_player.state() != QMediaPlayer.PlayingState:
-            self.play_music("menu_theme.mp3")
+            self.play_music("main_menu.mp3")
