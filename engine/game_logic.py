@@ -67,23 +67,15 @@ class GameEngine(QStackedWidget):
             print(f"Ошибка при запуске сценария: {e}")
 
     def choice(options):
-        """
-        Добавляет команду выбора в очередь диалогов.
-        :param options: Список кортежей вида [("Текст выбора", "значение"), ...].
-        """
         game_engine.currentWidget().dialogues.append(("__CHOICE__", options))
         if len(game_engine.currentWidget().dialogues) == 1:
             game_engine.currentWidget().show_next_dialogue()
 
     def exit_game(self):
-        # Закрытие игры
         self.close()
         QApplication.quit()
 
     def toggle_fullscreen(self, fullscreen):
-        """
-        Переключает между полноэкранным и оконным режимами.
-        """
         if fullscreen:
             self.showFullScreen()  # Полноэкранный режим
         else:
@@ -99,12 +91,6 @@ def show_scene(scene_name, effect="none"):
 
 def play_music(file_name, loop=False):
     game_engine.currentWidget().play_music(file_name, loop)
-
-def stop_music():
-    game_engine.currentWidget().stop_music()
-
-def play_sfx(file_name):
-    game_engine.currentWidget().play_sfx(file_name)
 
 def show_character(character_name, position="center"):
     game_engine.currentWidget().show_character(character_name, position)

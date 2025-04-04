@@ -17,14 +17,16 @@ class CaseScreen(QWidget):
 
         self.image_label = QLabel(self)
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setFixedSize(1200, 800)
-        self.image_label.move(780, 140)
+        self.image_label.setFixedSize(1920, 1080)
+        self.image_label.move(0, 15)
         self.image_label.raise_()
 
         self.images = [
             "assets/cases/case1.png",
-            "assets/cases/case2.png"
-            # "assets/cases/case3.png"   #потом...
+            "assets/cases/case2.png",
+            "assets/cases/case3.png",
+            "assets/cases/case4.png",
+            "assets/cases/case6.png"
         ]
         self.curr = 0
         self.show_currrrr()

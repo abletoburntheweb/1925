@@ -7,11 +7,9 @@ from engine.effects import fade, dissolve, hpunch, slide_out_to_right
 from engine.screens.dialog_history_screen import DialogHistoryScreen
 from engine.screens.notebook import Notebook
 from engine.screens.pause_menu import PauseMenu
-from engine.screens.settings_menu import SettingsScreen
 import json
 
 music_player = None
-sfx_player = None
 
 
 class GameScreen(QWidget):
@@ -84,16 +82,15 @@ class GameScreen(QWidget):
         self.choice_container.hide()
         self.layout.addWidget(self.choice_container)
 
-        # Меню паузы (используем готовый класс PauseMenu)
-        self.pause_menu = PauseMenu(parent=self)  # Создаем экземпляр PauseMenu
+
+        self.pause_menu = PauseMenu(game_engine)
         self.layout.addWidget(self.pause_menu)
         self.pause_menu.hide()
 
         self.text_container.show()
         self.character_layer.show()
 
-        # Блокнот
-        self.notebook = Notebook(parent=self)  # Создаем экземпляр Notebook
+        self.notebook = Notebook(parent=self)
 
         self.notebook.setParent(self)
         self.notebook.raise_()
@@ -103,16 +100,6 @@ class GameScreen(QWidget):
         self.notebook.raise_()
         self.notebook.tabs_container.raise_()
         self.notebook.close_notebook_button.raise_()
-
-    def settings(self):
-        global music_player
-        if not self.settings_screen:
-            self.settings_screen = SettingsScreen(self, music_player)
-            self.settings_screen.setParent(self)
-            self.settings_screen.setGeometry(420, 0, 1500, 1080)
-
-        self.settings_screen.raise_()
-        self.settings_screen.show()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_J:
@@ -145,28 +132,15 @@ class GameScreen(QWidget):
         self.text_container.show()
         self.character_layer.show()
 
-    def exit_game(self):
-        print("Бекаем")
-
-        global music_player
-        if music_player:
-            music_player.stop()
-
-        self.parent().setCurrentWidget(self.parent().main_menu)
-
-
     def say(self, character, text):
-        #print(f"Добавлена реплика: {text}")
         self.dialogues.append((character, text))
         if len(self.dialogues) == 1:
             self.show_next_dialogue()
 
     def show_next_dialogue(self):
-        """
-        Показывает следующую реплику или выполняет команды.
-        """
         if self.current_dialogue_index < len(self.dialogues):
             command = self.dialogues[self.current_dialogue_index]
+
             # Очищаем предыдущий текст
             while self.text_layout.count():
                 widget = self.text_layout.takeAt(0).widget()
@@ -212,26 +186,6 @@ class GameScreen(QWidget):
                     print(f"Показываю заголовок главы: {chapter_title}")
                     self.a_show_chapter(chapter_title, effect, next_script)
                     self.current_dialogue_index += 1
-                    return
-                elif command_type == "__MUSIC_PLAY__":
-                    file_name, loop = command[1], command[2]
-                    print(f"Воспроизводим музыку: {file_name}")
-                    self._a_play_music(file_name, loop)
-                    self.current_dialogue_index += 1
-                    self.show_next_dialogue()
-                    return
-                elif command_type == "__MUSIC_STOP__":
-                    print("Останавливаем музыку.")
-                    self._a_stop_music()
-                    self.current_dialogue_index += 1
-                    self.show_next_dialogue()
-                    return
-                elif command_type == "__SFX_PLAY__":
-                    file_name = command[1]
-                    print(f"Воспроизводим звуковой эффект: {file_name}")
-                    self._a_play_sfx(file_name)
-                    self.current_dialogue_index += 1
-                    self.show_next_dialogue()
                     return
                 else:
                     character, text = command
@@ -314,136 +268,29 @@ class GameScreen(QWidget):
                 self.history_screen.raise_()
 
     def play_music(self, file_name, loop=False):
-        """
-        Добавляет команду воспроизведения музыки в очередь диалогов.
-        :param file_name: Имя файла музыки (например, "theme.mp3").
-        :param loop: Флаг для зацикливания музыки.
-        """
-        self.dialogues.append(("__MUSIC_PLAY__", file_name, loop))
-        if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
-            self.show_next_dialogue()
-
-    def _a_play_music(self, file_name, loop=False):
         global music_player
-
-        # Если проигрыватель не инициализирован, создаем его
         if music_player is None:
             music_player = QMediaPlayer()
-
-        # Формируем путь к файлу
         url = QUrl.fromLocalFile(f"assets/music/{file_name}")
-        if not url.isValid():
-            print(f"Ошибка: Неверный URL для файла {file_name}")
-            return
-
-        # Проверяем, играет ли уже этот файл
-        current_media = music_player.media()
-        if current_media and current_media.canonicalUrl() == url:
-            print(f"Музыка уже воспроизводится: {file_name}")
-            return
-
-        # Останавливаем текущую музыку, если она играет
-        if music_player.state() == QMediaPlayer.PlayingState:
-            print("Останавливаю текущую музыку.")
-            music_player.stop()
-
-        # Загружаем новый файл
-        print(f"Загружаю музыку: {file_name}")
+        #print(f"Загружаю музыку: {file_name}")
         music_player.setMedia(QMediaContent(url))
-
-        # Настройка зацикливания
         if loop:
             music_player.mediaStatusChanged.connect(self._loop_music)
-        else:
-            music_player.mediaStatusChanged.disconnect(self._loop_music)
+        print("Начинаем воспроизведение музыки.")
 
-        # Устанавливаем громкость из настроек
         try:
             with open("engine/settings.json", "r", encoding="utf-8") as file:
                 settings = json.load(file)
         except FileNotFoundError:
             settings = {"music_volume": 50, "fullscreen": False}
-        music_volume = settings.get("music_volume", 50)
-        print(f"Установлена громкость музыки: {music_volume}")
-        music_player.setVolume(music_volume)
 
-        # Начинаем воспроизведение
-        print("Начинаем воспроизведение музыки.")
-        QTimer.singleShot(100, music_player.play)  # Добавляем задержку для корректной загрузки
-
+        music_player.setVolume(settings.get("music_volume", 50))
+        music_player.play()
 
     def _loop_music(self, status):
         if status == QMediaPlayer.EndOfMedia and music_player:
             music_player.setPosition(0)
             music_player.play()
-
-    def stop_music(self):
-        """
-        Добавляет команду остановки музыки в очередь диалогов.
-        """
-        self.dialogues.append(("__MUSIC_STOP__",))
-        if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
-            self.show_next_dialogue()
-
-    def _a_stop_music(self):
-        """
-        Останавливает воспроизведение текущей музыки.
-        """
-        global music_player
-        if music_player:
-            print("Останавливаю воспроизведение музыки.")
-            music_player.stop()
-
-    def play_sfx(self, file_name):
-        """
-        Добавляет команду воспроизведения звукового эффекта в очередь диалогов.
-        :param file_name: Имя файла звукового эффекта (например, "click.wav").
-        """
-        self.dialogues.append(("__SFX_PLAY__", file_name))
-        if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
-            self.show_next_dialogue()
-
-    def _a_play_sfx(self, file_name):
-        global sfx_player
-
-        # Если проигрыватель не инициализирован, создаем его
-        if sfx_player is None:
-            sfx_player = QMediaPlayer()
-
-        # Формируем путь к файлу
-        url = QUrl.fromLocalFile(f"assets/SFX/{file_name}")
-        if not url.isValid():
-            print(f"Ошибка: Неверный URL для файла {file_name}")
-            return
-
-        # Проверяем, играет ли уже этот файл
-        current_media = sfx_player.media()
-        if current_media and current_media.canonicalUrl() == url:
-            print(f"Звуковой эффект уже воспроизводится: {file_name}")
-            return
-
-        # Останавливаем текущий звуковой эффект, если он играет
-        if sfx_player.state() == QMediaPlayer.PlayingState:
-            print("Останавливаю текущий звуковой эффект.")
-            sfx_player.stop()
-
-        # Загружаем новый файл
-        print(f"Загружаю звуковой эффект: {file_name}")
-        sfx_player.setMedia(QMediaContent(url))
-
-        # Устанавливаем громкость из настроек
-        try:
-            with open("engine/settings.json", "r", encoding="utf-8") as file:
-                settings = json.load(file)
-        except FileNotFoundError:
-            settings = {"sfx_volume": 50, "fullscreen": False}
-        sfx_volume = settings.get("sfx_volume", 50)
-        print(f"Установлена громкость SFX: {sfx_volume}")
-        sfx_player.setVolume(sfx_volume)
-
-        # Начинаем воспроизведение с задержкой для корректной загрузки
-        print("Начинаем воспроизведение звукового эффекта.")
-        QTimer.singleShot(100, sfx_player.play)
 
     def show_character(self, character_name, position="center"):
         #print(f"Добавляю команду показа персонажа: {character_name} ({position})")
@@ -487,24 +334,12 @@ class GameScreen(QWidget):
             character.hide()
 
     def show_chapter(self, chapter_title, effect="fade", next_script=None):
-        """
-        Добавляет команду отображения заголовка главы в очередь диалогов.
-        :param chapter_title: Текст заголовка главы (например, "ГЛАВА 1").
-        :param effect: Эффект отображения заголовка ("fade", "none" и т.д.).
-        :param next_script: Путь к следующему скрипту (например, "scripts.chapter1:start").
-        """
         print(f"Добавляю команду отображения заголовка главы: {chapter_title}")
         self.dialogues.append(("__CHAPTER__", chapter_title, effect, next_script))
         if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
             self.show_next_dialogue()
 
     def a_show_chapter(self, chapter_title, effect="fade", next_script=None):
-        """
-        Фактически отображает заголовок главы на экране.
-        :param chapter_title: Текст заголовка главы (например, "ГЛАВА 1").
-        :param effect: Эффект отображения заголовка ("fade", "none" и т.д.).
-        :param next_script: Путь к следующему скрипту (например, "scripts.chapter1:start").
-        """
         print(f"Показываю заголовок главы: {chapter_title}")
 
         # Создаем QLabel для заголовка
@@ -536,10 +371,6 @@ class GameScreen(QWidget):
 
 
     def show_choices(self, options):
-        """
-        Добавляет команду отображения выборов в очередь диалогов.
-        :param options: Список кортежей вида [("Текст выбора", "значение"), ...].
-        """
         #print(f"Добавляю команду отображения выборов.")
         self.dialogues.append(("__CHOICE__", options))
 
@@ -548,10 +379,6 @@ class GameScreen(QWidget):
             self.show_next_dialogue()
 
     def a_show_choices(self, options):
-        """
-        Фактически отображает варианты выбора на экране.
-        :param options: Список кортежей вида [("Текст выбора", "значение"), ...].
-        """
         print("Отображаю варианты...")
 
         # Очищаем предыдущие выборы
@@ -592,27 +419,16 @@ class GameScreen(QWidget):
         self.choice_container.show()
 
     def handle_choice(self, choice_id):
-        """
-        Сохраняет результат выбора и скрывает контейнер с кнопками.
-        :param choice_id: Идентификатор выбранного варианта.
-        """
         print(f"Выбран вариант: {choice_id}")
         self.choice_result = choice_id
         self.clear_choices()
 
     def clear_choices(self):
-        """
-        Удаляет контейнер с вариантами выбора, если он есть.
-        """
         if hasattr(self, "choice_container") and self.choice_container:
             self.choice_container.deleteLater()
             self.choice_container = None
 
     def _on_choice_selected(self, value):
-        """
-        Обработчик выбора варианта.
-        :param value: Значение выбранного варианта.
-        """
         print(f"Выбран вариант: {value}")
         self.choice_container.hide()
         self.current_dialogue_index += 1

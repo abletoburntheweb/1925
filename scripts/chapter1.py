@@ -1,11 +1,11 @@
 from engine.game_logic import define_character, say, show_scene, play_music, stop_music, play_sfx, show_character, hide_character, choice
 
+narrator = define_character(None, color="#c8c8ff")
+detective = define_character("Детектив", color="#ffcccb")
+francis = define_character("Френсис Миллер", color="#ffcccb")
+alan = define_character("Алан Хант", color="#ffcccb")
 
-def start():
-    narrator = define_character(None, color="#c8c8ff")
-    detective = define_character("Детектив", color="#ffcccb")
-    francis = define_character("Френсис Миллер", color="#ffcccb")
-    alan = define_character("Алан Хант", color="#ffcccb")
+def scene1():
 
     show_scene("window", effect="fade")
     play_music("sample3.mp3", loop=True)
@@ -15,6 +15,7 @@ def start():
     show_character("francis", position="right")
     say(francis, "Что… что вы имеете в виду?")
     say(francis, "Давайте, пожалуйста, приступим к рассмотрению моего заявления.")
+
     stop_music()
     say(narrator, "Парень отчаянно пытался изобразить уверенность, но его поза выдавала страх.")
 
@@ -44,7 +45,9 @@ def start():
         say(narrator, "Эти слова ударили в него, как холодная волна. Френсис быстро огляделся.")
     else:
         say(narrator, "В воздухе повисло напряжённое молчание.")
+        scene2()
 
+def scene2():
     say(francis, "Могу тебе всё рассказать, но не здесь и не сейчас. Приходи ко мне в 7, я буду ждать.")
     say(alan, "Обещаю, что точно буду под окнами твоего дома в срок.")
 
@@ -108,3 +111,7 @@ def start():
         say(narrator, "Френсис сразу приступил к разговору.")
 
     say(narrator, "От этого разговора зависит многое...")
+
+
+def start():
+    scene1()

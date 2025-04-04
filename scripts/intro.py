@@ -1,10 +1,12 @@
 from engine.game_logic import define_character, say, show_scene, play_music, stop_music, play_sfx, show_character, hide_character, \
     start_script, show_chapter, game_engine
 
-def start():
-    narrator = define_character(None, color="#c8c8ff")
-    police = define_character("Полицейский", color="#ffcccb")
-    woman = define_character("Женщина", color="#ffcccb")
+narrator = define_character(None, color="#c8c8ff")
+police = define_character("Полицейский", color="#ffcccb")
+woman = define_character("Женщина", color="#ffcccb")
+
+def scene1():
+
 
     show_scene("town", effect="fade")
     play_music("intro.mp3", loop=True)
@@ -20,13 +22,14 @@ def start():
 
     show_scene("window_out", effect="fade")
 
+
     show_scene("window_out1", effect="dissolve")
     say(narrator, "Понять человеческую натуру не так уж и сложно, как кажется на первый взгляд.")
     play_music("sample1.mp3", loop=True)
+
     say(narrator,"Их движения рук или мимики лица будут выдавать истинные намерения, даже если они превосходные лгуны, язык тела не даст соврать.")
     say(narrator, "Они будут скрещивать руки, не желая с вами разговаривать, подобно раздражённой жене, встречающей в глубокой ночи своего мужа, который вернулся поздно.")
     say(narrator, "В её взгляде будет холод, как у хищника, готовящегося к атаке, а движения будут резкими и напряжёнными, словно она прячет в кармане нож, который наконец освободит её от «проблем».")
-
     stop_music()
     show_scene("window_out2", effect="hpunch")
     play_sfx("door.mp3")
@@ -34,10 +37,13 @@ def start():
     say(narrator, "Каждый его шаг будет осторожным, как будто он идет по минному полю, где каждое слово может разрушить его тщательно выстроенный обман.")
     say(narrator, "Дети, наблюдая за этой напряженной атмосферой, подавлены. Внешне семья выглядит как единое целое, но внутри царит хаос и недоверие.")
     say(narrator, "Каждый вечер проходит в молчании, где разговоры поверхностные, а под маской скрываются глубокие боли.")
-    play_music("sample2.mp3", loop=True)
+    scene2()
 
+def scene2():
 
     show_scene("window_in1", effect="fade")
+    play_music("sample2.mp3", loop=True)
+
     say(narrator, "И так будет до тех пор, пока одной такой ночью, когда луна скрылась за густой хмарой, а гул сирен раздался в тишине, как зловещая мелодия, прерывающая сны соседей.")
     say(narrator, "Их глаза, полные недоумения и любопытства, открывались с трудом, а в головах роились вопросы: «что же произошло?»")
 
@@ -45,8 +51,8 @@ def start():
     say(narrator, "Сотрудники полиции, с серьезными лицами, задают вопросы о некой семье, которая казалась счастливой.")
 
     show_scene("door_close", effect="dissolve")
-    show_scene("door_open", effect="dissolve")
 
+    show_scene("door_open", effect="dissolve")
 
     show_character("policeman", position="right")
     say(police, "Вы не видели её сегодня?")
@@ -70,3 +76,6 @@ def start():
     say(narrator, "В этой паутине интриг и страстей, где каждый может стать жертвой или преступником, истина остается скрытой, как луна за облаками. Ночь, полная загадок.")
 
     show_chapter("ГЛАВА 1", effect="fade", next_script="scripts.chapter1:start")
+
+def start():
+    scene1()
