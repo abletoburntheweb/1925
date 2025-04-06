@@ -67,10 +67,6 @@ class GameEngine(QStackedWidget):
             print(f"Ошибка при запуске сценария: {e}")
 
     def choice(options):
-        """
-        Добавляет команду выбора в очередь диалогов.
-        :param options: Список кортежей вида [("Текст выбора", "значение"), ...].
-        """
         game_engine.currentWidget().dialogues.append(("__CHOICE__", options))
         if len(game_engine.currentWidget().dialogues) == 1:
             game_engine.currentWidget().show_next_dialogue()

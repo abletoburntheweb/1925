@@ -115,6 +115,9 @@ class GameScreen(QWidget):
         self.settings_screen.show()
 
     def keyPressEvent(self, event):
+        if self.choice_container and self.choice_container.isVisible():
+            return
+
         if event.key() == Qt.Key_J:
             if not self.pause_menu.isVisible():
                 print("Нажата клавиша J.")
@@ -133,8 +136,10 @@ class GameScreen(QWidget):
             else:
                 self.resume_game()
             return
+
         if self.pause_menu.isVisible() or self.notebook.is_notebook_active:
             return
+
         if event.key() == Qt.Key_Space:
             print("Нажата клавиша пробел.")
             if not self.history_screen.isVisible():
@@ -162,104 +167,331 @@ class GameScreen(QWidget):
             self.show_next_dialogue()
 
     def show_next_dialogue(self):
-        """
-        Показывает следующую реплику или выполняет команды.
-        """
-        if self.current_dialogue_index < len(self.dialogues):
-            command = self.dialogues[self.current_dialogue_index]
-            # Очищаем предыдущий текст
-            while self.text_layout.count():
-                widget = self.text_layout.takeAt(0).widget()
-                if widget:
-                    widget.deleteLater()
+        print(f"Показываю следующий диалог. Индекс: {self.current_dialogue_index}")
 
-            # Локальный импорт для избежания циклической зависимости
-            from engine.game_logic import Character
+        if self.current_dialogue_index >= len(self.dialogues):
+            print("Все реплики показаны.")
+            if hasattr(self, "on_intro_end") and callable(self.on_intro_end):
+                self.on_intro_end()
+            return
 
-            # Обработка команд
+        command = self.dialogues[self.current_dialogue_index]
+        print(f"Текущая команда: {command}")
+
+        # Очищаем предыдущий текст
+        while self.text_layout.count():
+            widget = self.text_layout.takeAt(0).widget()
+            if widget:
+                widget.deleteLater()
+
+        try:
             if isinstance(command, tuple) and len(command) > 0:
                 command_type = command[0]
+
                 if command_type == "__CHOICE__":
                     options = command[1]
                     print("Обнаружена команда выбора.")
                     self.a_show_choices(options)
                     self.current_dialogue_index += 1
                     return
-                elif command_type == "__SCENE__":
-                    scene_name, effect = command[1], command[2]
-                    print(f"Меняем сцену на: {scene_name}")
-                    self.a_show_scene(scene_name, effect)
-                    self.current_dialogue_index += 1
-                    self.show_next_dialogue()
+
+                elif command_type in ["__SCENE__", "__SHOW__", "__HIDE__",
+                                      "__CHAPTER__", "__MUSIC_PLAY__",
+                                      "__MUSIC_STOP__", "__SFX_PLAY__"]:
+                    # Обработка системных команд
+                    self._handle_system_command(command)
                     return
-                elif command_type == "__SHOW__":
-                    character_name, position = command[1], command[2]
-                    print(f"Показываем персонажа: {character_name}")
-                    self.a_show_character(character_name, position)
-                    self.current_dialogue_index += 1
-                    self.show_next_dialogue()
-                    return
-                elif command_type == "__HIDE__":
-                    character_name = command[1]
-                    print(f"Скрываем персонажа: {character_name}")
-                    if character_name in self.character_labels:
-                        self.character_labels[character_name].hide()
-                    self.current_dialogue_index += 1
-                    self.show_next_dialogue()
-                    return
-                elif command_type == "__CHAPTER__":
-                    chapter_title, effect, next_script = command[1], command[2], command[3]
-                    print(f"Показываю заголовок главы: {chapter_title}")
-                    self.a_show_chapter(chapter_title, effect, next_script)
-                    self.current_dialogue_index += 1
-                    return
-                elif command_type == "__MUSIC_PLAY__":
-                    file_name, loop = command[1], command[2]
-                    print(f"Воспроизводим музыку: {file_name}")
-                    self._a_play_music(file_name, loop)
-                    self.current_dialogue_index += 1
-                    self.show_next_dialogue()
-                    return
-                elif command_type == "__MUSIC_STOP__":
-                    print("Останавливаем музыку.")
-                    self._a_stop_music()
-                    self.current_dialogue_index += 1
-                    self.show_next_dialogue()
-                    return
-                elif command_type == "__SFX_PLAY__":
-                    file_name = command[1]
-                    print(f"Воспроизводим звуковой эффект: {file_name}")
-                    self._a_play_sfx(file_name)
-                    self.current_dialogue_index += 1
-                    self.show_next_dialogue()
-                    return
+
                 else:
-                    character, text = command
-                    if isinstance(character, Character):  # Проверяем, что character — это объект Character
-                        if character.name:  # Проверяем, что имя персонажа не None
-                            name_label = QLabel(f"<font color='{character.color}'><b>{character.name}:</b></font>")
-                            name_label.setStyleSheet(
-                                "font-size: 36px;"
-                                "font-family: 'Arial';"
-                                "font-weight: bold;"
-                                "padding-bottom: 5px;"
-                            )
-                            self.text_layout.addWidget(name_label)
-                    text_label = QLabel(f"<font color='white'>{text}</font>")
-                    text_label.setWordWrap(True)
-                    text_label.setStyleSheet(
-                        "font-size: 32px;"
-                        "font-family: 'Arial';"
-                        "line-height: 1.4;"
-                        "font-weight: bold;"
-                        "padding-left: 10px;"
-                    )
-                    self.text_layout.addWidget(text_label)
-                    self.current_dialogue_index += 1
-        else:
-            print("Все реплики показаны.")
-            if hasattr(self, "on_intro_end") and callable(self.on_intro_end):
-                self.on_intro_end()
+                    # Обработка обычного диалога или условий
+                    self._handle_dialogue_or_condition(command)
+
+        except Exception as e:
+            print(f"Ошибка при обработке диалога: {e}")
+            self.current_dialogue_index += 1
+            self.show_next_dialogue()
+
+    def _handle_system_command(self, command):
+        command_type = command[0]
+        if command_type == "__SCENE__":
+            scene_name, effect = command[1], command[2]
+            print(f"Меняем сцену на: {scene_name}")
+            self.a_show_scene(scene_name, effect)
+        elif command_type == "__SHOW__":
+            character_name, position = command[1], command[2]
+            print(f"Показываем персонажа: {character_name}")
+            self.a_show_character(character_name, position)
+        elif command_type == "__HIDE__":
+            character_name = command[1]
+            print(f"Скрываем персонажа: {character_name}")
+            if character_name in self.character_labels:
+                self.character_labels[character_name].hide()
+        elif command_type == "__CHAPTER__":
+            chapter_title, effect, next_script = command[1], command[2], command[3]
+            print(f"Показываю заголовок главы: {chapter_title}")
+            self.a_show_chapter(chapter_title, effect, next_script)
+        elif command_type == "__MUSIC_PLAY__":
+            file_name, loop = command[1], command[2]
+            print(f"Воспроизводим музыку: {file_name}")
+            self._a_play_music(file_name, loop)
+        elif command_type == "__MUSIC_STOP__":
+            print("Останавливаем музыку.")
+            self._a_stop_music()
+        elif command_type == "__SFX_PLAY__":
+            file_name = command[1]
+            print(f"Воспроизводим звуковой эффект: {file_name}")
+            self._a_play_sfx(file_name)
+
+        self.current_dialogue_index += 1
+        self.show_next_dialogue()
+
+    def _handle_dialogue_or_condition(self, command):
+        from engine.game_logic import Character
+
+        if len(command) != 2:
+            print(f"Некорректная команда: {command}")
+            self.current_dialogue_index += 1
+            self.show_next_dialogue()
+            return
+
+        character, text = command
+
+        if isinstance(text, str) and text.startswith(("if ", "elif ", "else")):
+            condition_met, new_index = self._process_conditions(self.current_dialogue_index)
+
+            if not condition_met:
+                # Пропускаем весь блок условий
+                while (new_index < len(self.dialogues) and
+                       isinstance(self.dialogues[new_index], tuple) and
+                       len(self.dialogues[new_index]) == 2 and
+                       isinstance(self.dialogues[new_index][1], str) and
+                       self.dialogues[new_index][1].startswith(("if ", "elif ", "else"))):
+                    new_index += 1
+
+                self.current_dialogue_index = new_index
+                self.show_next_dialogue()
+                return
+            else:
+                self.current_dialogue_index = new_index
+                self.show_next_dialogue()
+                return
+
+        # Отображение обычного текста
+        if isinstance(character, Character):
+            if character.name:
+                name_label = QLabel(f"<font color='{character.color}'><b>{character.name}:</b></font>")
+                name_label.setStyleSheet(
+                    "font-size: 36px;"
+                    "font-family: 'Arial';"
+                    "font-weight: bold;"
+                    "padding-bottom: 5px;"
+                )
+                self.text_layout.addWidget(name_label)
+
+        if isinstance(text, str):
+            text_label = QLabel(f"<font color='white'>{text}</font>")
+            text_label.setWordWrap(True)
+            text_label.setStyleSheet(
+                "font-size: 32px;"
+                "font-family: 'Arial';"
+                "line-height: 1.4;"
+                "font-weight: bold;"
+                "padding-left: 10px;"
+            )
+            self.text_layout.addWidget(text_label)
+
+        self.current_dialogue_index += 1
+
+    def _process_conditions(self, start_index):
+        original_index = start_index
+        condition_met = False
+        current_index = start_index
+
+        while current_index < len(self.dialogues):
+            command = self.dialogues[current_index]
+
+            if not isinstance(command, tuple) or len(command) != 2:
+                break
+
+            _, text = command
+
+            if not isinstance(text, str):
+                break
+
+            if text.startswith("if "):
+                condition = text[3:].strip()
+                result = eval(condition, {"choice_result": self.choice_result})
+                if result:
+                    condition_met = True
+                    current_index += 1
+                    break
+                else:
+                    current_index += 1
+                    continue
+
+            elif text.startswith("elif ") and not condition_met:
+                condition = text[5:].strip()
+                result = eval(condition, {"choice_result": self.choice_result})
+                if result:
+                    condition_met = True
+                    current_index += 1
+                    break
+                else:
+                    current_index += 1
+                    continue
+
+            elif text.startswith("else") and not condition_met:
+                condition_met = True
+                current_index += 1
+                break
+
+            elif not text.startswith(("if ", "elif ", "else")):
+                break
+
+            current_index += 1
+
+        return condition_met, current_index
+
+    def _handle_system_command(self, command):
+        command_type = command[0]
+        if command_type == "__SCENE__":
+            scene_name, effect = command[1], command[2]
+            print(f"Меняем сцену на: {scene_name}")
+            self.a_show_scene(scene_name, effect)
+        elif command_type == "__SHOW__":
+            character_name, position = command[1], command[2]
+            print(f"Показываем персонажа: {character_name}")
+            self.a_show_character(character_name, position)
+        elif command_type == "__HIDE__":
+            character_name = command[1]
+            print(f"Скрываем персонажа: {character_name}")
+            if character_name in self.character_labels:
+                self.character_labels[character_name].hide()
+        elif command_type == "__CHAPTER__":
+            chapter_title, effect, next_script = command[1], command[2], command[3]
+            print(f"Показываю заголовок главы: {chapter_title}")
+            self.a_show_chapter(chapter_title, effect, next_script)
+        elif command_type == "__MUSIC_PLAY__":
+            file_name, loop = command[1], command[2]
+            print(f"Воспроизводим музыку: {file_name}")
+            self._a_play_music(file_name, loop)
+        elif command_type == "__MUSIC_STOP__":
+            print("Останавливаем музыку.")
+            self._a_stop_music()
+        elif command_type == "__SFX_PLAY__":
+            file_name = command[1]
+            print(f"Воспроизводим звуковой эффект: {file_name}")
+            self._a_play_sfx(file_name)
+
+        self.current_dialogue_index += 1
+        self.show_next_dialogue()
+
+    def _handle_dialogue_or_condition(self, command):
+        from engine.game_logic import Character
+
+        if len(command) != 2:
+            print(f"Некорректная команда: {command}")
+            self.current_dialogue_index += 1
+            self.show_next_dialogue()
+            return
+
+        character, text = command
+
+        if isinstance(text, str) and text.startswith(("if ", "elif ", "else")):
+            condition_met, new_index = self._process_conditions(self.current_dialogue_index)
+
+            if not condition_met:
+                # Пропускаем весь блок условий
+                while (new_index < len(self.dialogues) and
+                       isinstance(self.dialogues[new_index], tuple) and
+                       len(self.dialogues[new_index]) == 2 and
+                       isinstance(self.dialogues[new_index][1], str) and
+                       self.dialogues[new_index][1].startswith(("if ", "elif ", "else"))):
+                    new_index += 1
+
+                self.current_dialogue_index = new_index
+                self.show_next_dialogue()
+                return
+            else:
+                self.current_dialogue_index = new_index
+                self.show_next_dialogue()
+                return
+
+        # Отображение обычного текста
+        if isinstance(character, Character):
+            if character.name:
+                name_label = QLabel(f"<font color='{character.color}'><b>{character.name}:</b></font>")
+                name_label.setStyleSheet(
+                    "font-size: 36px;"
+                    "font-family: 'Arial';"
+                    "font-weight: bold;"
+                    "padding-bottom: 5px;"
+                )
+                self.text_layout.addWidget(name_label)
+
+        if isinstance(text, str):
+            text_label = QLabel(f"<font color='white'>{text}</font>")
+            text_label.setWordWrap(True)
+            text_label.setStyleSheet(
+                "font-size: 32px;"
+                "font-family: 'Arial';"
+                "line-height: 1.4;"
+                "font-weight: bold;"
+                "padding-left: 10px;"
+            )
+            self.text_layout.addWidget(text_label)
+
+        self.current_dialogue_index += 1
+
+    def _process_conditions(self, start_index):
+        original_index = start_index
+        condition_met = False
+        current_index = start_index
+
+        while current_index < len(self.dialogues):
+            command = self.dialogues[current_index]
+
+            if not isinstance(command, tuple) or len(command) != 2:
+                break
+
+            _, text = command
+
+            if not isinstance(text, str):
+                break
+
+            if text.startswith("if "):
+                condition = text[3:].strip()
+                result = eval(condition, {"choice_result": self.choice_result})
+                if result:
+                    condition_met = True
+                    current_index += 1
+                    break
+                else:
+                    current_index += 1
+                    continue
+
+            elif text.startswith("elif ") and not condition_met:
+                condition = text[5:].strip()
+                result = eval(condition, {"choice_result": self.choice_result})
+                if result:
+                    condition_met = True
+                    current_index += 1
+                    break
+                else:
+                    current_index += 1
+                    continue
+
+            elif text.startswith("else") and not condition_met:
+                condition_met = True
+                current_index += 1
+                break
+
+            elif not text.startswith(("if ", "elif ", "else")):
+                break
+
+            current_index += 1
+
+        return condition_met, current_index
 
     def show_scene(self, scene_name, effect="none"):
         #print(f"Добавляю команду смены сцены: {scene_name} ({effect})")
@@ -295,8 +527,12 @@ class GameScreen(QWidget):
         self.dialogue_history.append((character, text))
 
     def mousePressEvent(self, event):
+        if self.choice_container and self.choice_container.isVisible():
+            return
+
         if self.pause_menu.isVisible() or self.notebook.is_notebook_active:
             return
+
         if event.button() == Qt.LeftButton:
             print("Нажата левая кнопка мыши.")
             if not self.history_screen.isVisible():
@@ -314,11 +550,6 @@ class GameScreen(QWidget):
                 self.history_screen.raise_()
 
     def play_music(self, file_name, loop=False):
-        """
-        Добавляет команду воспроизведения музыки в очередь диалогов.
-        :param file_name: Имя файла музыки (например, "theme.mp3").
-        :param loop: Флаг для зацикливания музыки.
-        """
         self.dialogues.append(("__MUSIC_PLAY__", file_name, loop))
         if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
             self.show_next_dialogue()
@@ -326,38 +557,31 @@ class GameScreen(QWidget):
     def _a_play_music(self, file_name, loop=False):
         global music_player
 
-        # Если проигрыватель не инициализирован, создаем его
         if music_player is None:
             music_player = QMediaPlayer()
 
-        # Формируем путь к файлу
         url = QUrl.fromLocalFile(f"assets/music/{file_name}")
         if not url.isValid():
             print(f"Ошибка: Неверный URL для файла {file_name}")
             return
 
-        # Проверяем, играет ли уже этот файл
         current_media = music_player.media()
         if current_media and current_media.canonicalUrl() == url:
             print(f"Музыка уже воспроизводится: {file_name}")
             return
 
-        # Останавливаем текущую музыку, если она играет
         if music_player.state() == QMediaPlayer.PlayingState:
             print("Останавливаю текущую музыку.")
             music_player.stop()
 
-        # Загружаем новый файл
         print(f"Загружаю музыку: {file_name}")
         music_player.setMedia(QMediaContent(url))
 
-        # Настройка зацикливания
         if loop:
             music_player.mediaStatusChanged.connect(self._loop_music)
         else:
             music_player.mediaStatusChanged.disconnect(self._loop_music)
 
-        # Устанавливаем громкость из настроек
         try:
             with open("engine/settings.json", "r", encoding="utf-8") as file:
                 settings = json.load(file)
@@ -367,9 +591,8 @@ class GameScreen(QWidget):
         print(f"Установлена громкость музыки: {music_volume}")
         music_player.setVolume(music_volume)
 
-        # Начинаем воспроизведение
         print("Начинаем воспроизведение музыки.")
-        QTimer.singleShot(100, music_player.play)  # Добавляем задержку для корректной загрузки
+        QTimer.singleShot(100, music_player.play)
 
 
     def _loop_music(self, status):
@@ -378,27 +601,17 @@ class GameScreen(QWidget):
             music_player.play()
 
     def stop_music(self):
-        """
-        Добавляет команду остановки музыки в очередь диалогов.
-        """
         self.dialogues.append(("__MUSIC_STOP__",))
         if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
             self.show_next_dialogue()
 
     def _a_stop_music(self):
-        """
-        Останавливает воспроизведение текущей музыки.
-        """
         global music_player
         if music_player:
             print("Останавливаю воспроизведение музыки.")
             music_player.stop()
 
     def play_sfx(self, file_name):
-        """
-        Добавляет команду воспроизведения звукового эффекта в очередь диалогов.
-        :param file_name: Имя файла звукового эффекта (например, "click.wav").
-        """
         self.dialogues.append(("__SFX_PLAY__", file_name))
         if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
             self.show_next_dialogue()
@@ -406,32 +619,26 @@ class GameScreen(QWidget):
     def _a_play_sfx(self, file_name):
         global sfx_player
 
-        # Если проигрыватель не инициализирован, создаем его
         if sfx_player is None:
             sfx_player = QMediaPlayer()
 
-        # Формируем путь к файлу
         url = QUrl.fromLocalFile(f"assets/SFX/{file_name}")
         if not url.isValid():
             print(f"Ошибка: Неверный URL для файла {file_name}")
             return
 
-        # Проверяем, играет ли уже этот файл
         current_media = sfx_player.media()
         if current_media and current_media.canonicalUrl() == url:
             print(f"Звуковой эффект уже воспроизводится: {file_name}")
             return
 
-        # Останавливаем текущий звуковой эффект, если он играет
         if sfx_player.state() == QMediaPlayer.PlayingState:
             print("Останавливаю текущий звуковой эффект.")
             sfx_player.stop()
 
-        # Загружаем новый файл
         print(f"Загружаю звуковой эффект: {file_name}")
         sfx_player.setMedia(QMediaContent(url))
 
-        # Устанавливаем громкость из настроек
         try:
             with open("engine/settings.json", "r", encoding="utf-8") as file:
                 settings = json.load(file)
@@ -441,7 +648,6 @@ class GameScreen(QWidget):
         print(f"Установлена громкость SFX: {sfx_volume}")
         sfx_player.setVolume(sfx_volume)
 
-        # Начинаем воспроизведение с задержкой для корректной загрузки
         print("Начинаем воспроизведение звукового эффекта.")
         QTimer.singleShot(100, sfx_player.play)
 
@@ -487,27 +693,14 @@ class GameScreen(QWidget):
             character.hide()
 
     def show_chapter(self, chapter_title, effect="fade", next_script=None):
-        """
-        Добавляет команду отображения заголовка главы в очередь диалогов.
-        :param chapter_title: Текст заголовка главы (например, "ГЛАВА 1").
-        :param effect: Эффект отображения заголовка ("fade", "none" и т.д.).
-        :param next_script: Путь к следующему скрипту (например, "scripts.chapter1:start").
-        """
         print(f"Добавляю команду отображения заголовка главы: {chapter_title}")
         self.dialogues.append(("__CHAPTER__", chapter_title, effect, next_script))
         if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
             self.show_next_dialogue()
 
     def a_show_chapter(self, chapter_title, effect="fade", next_script=None):
-        """
-        Фактически отображает заголовок главы на экране.
-        :param chapter_title: Текст заголовка главы (например, "ГЛАВА 1").
-        :param effect: Эффект отображения заголовка ("fade", "none" и т.д.).
-        :param next_script: Путь к следующему скрипту (например, "scripts.chapter1:start").
-        """
         print(f"Показываю заголовок главы: {chapter_title}")
 
-        # Создаем QLabel для заголовка
         chapter_label = QLabel(chapter_title, self)
         chapter_label.setAlignment(Qt.AlignCenter)
         chapter_label.setStyleSheet("""
@@ -523,42 +716,26 @@ class GameScreen(QWidget):
         chapter_label.move((self.width() - 800) // 2, (self.height() - 200) // 2)
         chapter_label.show()
 
-        # Анимация (если выбран эффект fade)
         if effect == "fade":
             fade(chapter_label)
-
-        # Удаляем заголовок после завершения анимации
         QTimer.singleShot(2000, lambda: chapter_label.deleteLater())
 
-        # Переход к следующему скрипту
         if next_script:
             QTimer.singleShot(2000, lambda: self.game_engine.start_script(next_script))
 
 
     def show_choices(self, options):
-        """
-        Добавляет команду отображения выборов в очередь диалогов.
-        :param options: Список кортежей вида [("Текст выбора", "значение"), ...].
-        """
         #print(f"Добавляю команду отображения выборов.")
         self.dialogues.append(("__CHOICE__", options))
 
-        # Если это первая команда в очереди, запускаем обработку
         if len(self.dialogues) == 1 and self.current_dialogue_index == 0:
             self.show_next_dialogue()
 
     def a_show_choices(self, options):
-        """
-        Фактически отображает варианты выбора на экране.
-        :param options: Список кортежей вида [("Текст выбора", "значение"), ...].
-        """
         print("Отображаю варианты...")
-
-        # Очищаем предыдущие выборы
         if hasattr(self, "choice_container") and self.choice_container:
             self.choice_container.deleteLater()
 
-        # Создаём контейнер для выборов
         self.choice_container = QWidget(self)
         self.choice_container.setFixedSize(800, len(options) * 80 + 120)
         self.choice_container.move((self.width() - 800) // 2, (self.height() - (len(options) * 80 + 120)) // 2)
@@ -568,6 +745,9 @@ class GameScreen(QWidget):
         layout.setAlignment(Qt.AlignCenter)
 
         for text, value in options:
+            def create_handler(val):
+                return lambda: self.handle_choice(val)
+
             button = QPushButton(text)
             button.setFixedSize(600, 60)
             button.setFont(QFont("Arial", 24))
@@ -585,35 +765,89 @@ class GameScreen(QWidget):
                     background-color: rgba(120, 120, 120, 200);
                 }
             """)
-            button.clicked.connect(lambda _, v=value: self.handle_choice(v))
+            button.clicked.connect(create_handler(value))
             layout.addWidget(button)
 
         self.choice_container.setLayout(layout)
         self.choice_container.show()
 
     def handle_choice(self, choice_id):
-        """
-        Сохраняет результат выбора и скрывает контейнер с кнопками.
-        :param choice_id: Идентификатор выбранного варианта.
-        """
         print(f"Выбран вариант: {choice_id}")
         self.choice_result = choice_id
         self.clear_choices()
+        self._on_choice_selected(choice_id)
+        self.choice_container = None
 
     def clear_choices(self):
-        """
-        Удаляет контейнер с вариантами выбора, если он есть.
-        """
         if hasattr(self, "choice_container") and self.choice_container:
             self.choice_container.deleteLater()
             self.choice_container = None
 
     def _on_choice_selected(self, value):
-        """
-        Обработчик выбора варианта.
-        :param value: Значение выбранного варианта.
-        """
-        print(f"Выбран вариант: {value}")
-        self.choice_container.hide()
-        self.current_dialogue_index += 1
-        self.show_next_dialogue(choice_result=value)
+        print(f"Обрабатываем выбор: {value}")
+        if self.choice_container:
+            self.choice_container.hide()
+
+        original_index = self.current_dialogue_index
+        condition_met = False
+        new_index = original_index
+
+        while new_index < len(self.dialogues):
+            command = self.dialogues[new_index]
+
+            # Пропускаем не-условия
+            if not isinstance(command, tuple) or len(command) != 2:
+                new_index += 1
+                continue
+
+            character, text = command
+
+            # Проверяем только строки
+            if not isinstance(text, str):
+                new_index += 1
+                continue
+
+            if text.startswith("if "):
+                condition = text[3:].strip()
+                result = eval(condition, {"choice_result": value})
+
+                if result:
+                    condition_met = True
+                    break
+                else:
+                    new_index += 1
+                    continue
+
+            elif text.startswith("elif ") and not condition_met:
+                condition = text[5:].strip()
+                result = eval(condition, {"choice_result": value})
+
+                if result:
+                    condition_met = True
+                    break
+                else:
+                    new_index += 1
+                    continue
+
+            elif text.startswith("else") and not condition_met:
+                condition_met = True
+                break
+
+            elif not text.startswith(("if ", "elif ", "else")):
+                break
+
+            new_index += 1
+
+        if condition_met:
+            self.current_dialogue_index = new_index + 1
+        else:
+            # Пропускаем весь блок условий
+            while (new_index < len(self.dialogues) and
+                   isinstance(self.dialogues[new_index], tuple) and
+                   len(self.dialogues[new_index]) == 2 and
+                   isinstance(self.dialogues[new_index][1], str) and
+                   self.dialogues[new_index][1].startswith(("if ", "elif ", "else"))):
+                new_index += 1
+            self.current_dialogue_index = new_index
+
+        self.show_next_dialogue()

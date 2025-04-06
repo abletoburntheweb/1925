@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QPushButton, QLabel
 from PyQt5.QtGui import QFont, QMovie, QPixmap
-from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtCore import Qt, QUrl, QTimer
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import json
 from engine.screens.settings_menu import SettingsScreen
@@ -46,6 +46,14 @@ class MainMenu(QWidget):
             button = self.create_button(text, button_x, button_y, callback)
             button_y += 60
 
+        version_label = QLabel(f"Версия: 0.6", self)
+        version_label.setFont(QFont("Arial", 18))
+        version_label.setStyleSheet("""
+                    color: rgba(200, 200, 200, 200);
+                """)
+        version_label.setAlignment(Qt.AlignRight | Qt.AlignBottom)
+        self.version_label = version_label
+
     def create_button(self, text, x, y, callback):
         button = QPushButton(text, self)
         button.setFont(QFont("Arial", 24))
@@ -80,7 +88,19 @@ class MainMenu(QWidget):
         if hasattr(self, "background_label") and self.background_label:
             self.background_label.resize(event.size())
             self.overlay_label.resize(event.size())
+
+            self.position_version_label()
         super().resizeEvent(event)
+
+    def position_version_label(self):
+        margin = 10
+        x = self.width() - self.version_label.fontMetrics().boundingRect(
+            self.version_label.text()).width() - margin
+        y = self.height() - self.version_label.fontMetrics().height() - margin
+        self.version_label.setGeometry(x, y,
+                                       self.version_label.fontMetrics().boundingRect(
+                                           self.version_label.text()).width(),
+                                       self.version_label.fontMetrics().height())
 
     def start_new_game(self):
         self.music_player.stop()
@@ -110,3 +130,5 @@ class MainMenu(QWidget):
         super().showEvent(event)
         if self.music_player.state() != QMediaPlayer.PlayingState:
             self.play_music("main_menu.mp3")
+
+        QTimer.singleShot(100, self.position_version_label)
