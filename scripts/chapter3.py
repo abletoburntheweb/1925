@@ -10,5 +10,4 @@ bartender = define_character("Бармен", color="#ffcccb")
 
 
 def scene1():
-
     pass

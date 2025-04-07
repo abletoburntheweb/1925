@@ -302,55 +302,6 @@ class GameScreen(QWidget):
 
         self.current_dialogue_index += 1
 
-    def _process_conditions(self, start_index):
-        original_index = start_index
-        condition_met = False
-        current_index = start_index
-
-        while current_index < len(self.dialogues):
-            command = self.dialogues[current_index]
-
-            if not isinstance(command, tuple) or len(command) != 2:
-                break
-
-            _, text = command
-
-            if not isinstance(text, str):
-                break
-
-            if text.startswith("if "):
-                condition = text[3:].strip()
-                result = eval(condition, {"choice_result": self.choice_result})
-                if result:
-                    condition_met = True
-                    current_index += 1
-                    break
-                else:
-                    current_index += 1
-                    continue
-
-            elif text.startswith("elif ") and not condition_met:
-                condition = text[5:].strip()
-                result = eval(condition, {"choice_result": self.choice_result})
-                if result:
-                    condition_met = True
-                    current_index += 1
-                    break
-                else:
-                    current_index += 1
-                    continue
-
-            elif text.startswith("else") and not condition_met:
-                condition_met = True
-                current_index += 1
-                break
-
-            elif not text.startswith(("if ", "elif ", "else")):
-                break
-
-            current_index += 1
-
-        return condition_met, current_index
 
     def _handle_system_command(self, command):
         command_type = command[0]
@@ -789,65 +740,81 @@ class GameScreen(QWidget):
             self.choice_container.hide()
 
         original_index = self.current_dialogue_index
-        condition_met = False
-        new_index = original_index
+        context_stack = []  # Стек для отслеживания контекста
 
-        while new_index < len(self.dialogues):
-            command = self.dialogues[new_index]
+        while self.current_dialogue_index < len(self.dialogues):
+            command = self.dialogues[self.current_dialogue_index]
 
             # Пропускаем не-условия
             if not isinstance(command, tuple) or len(command) != 2:
-                new_index += 1
+                self.current_dialogue_index += 1
                 continue
 
             character, text = command
 
-            # Проверяем только строки
             if not isinstance(text, str):
-                new_index += 1
+                self.current_dialogue_index += 1
                 continue
 
             if text.startswith("if "):
                 condition = text[3:].strip()
                 result = eval(condition, {"choice_result": value})
-
                 if result:
-                    condition_met = True
-                    break
+                    # Условие истинно - выполняем этот блок
+                    self.current_dialogue_index += 1
+                    self.show_next_dialogue()
+                    return
                 else:
-                    new_index += 1
+                    # Переходим к следующему условию
+                    context_stack.append("if")
+                    self.current_dialogue_index += 1
                     continue
 
-            elif text.startswith("elif ") and not condition_met:
-                condition = text[5:].strip()
-                result = eval(condition, {"choice_result": value})
-
-                if result:
-                    condition_met = True
-                    break
+            elif text.startswith("elif "):
+                if context_stack and context_stack[-1] == "if":
+                    condition = text[5:].strip()
+                    result = eval(condition, {"choice_result": value})
+                    if result:
+                        # Условие истинно - выполняем этот блок
+                        context_stack.pop()
+                        self.current_dialogue_index += 1
+                        self.show_next_dialogue()
+                        return
+                    else:
+                        # Продолжаем искать подходящее условие
+                        self.current_dialogue_index += 1
+                        continue
                 else:
-                    new_index += 1
-                    continue
+                    print("Некорректный elif")
 
-            elif text.startswith("else") and not condition_met:
-                condition_met = True
-                break
+            elif text.startswith("else"):
+                if context_stack and context_stack[-1] == "if":
+                    # Завершаем блок if
+                    context_stack.pop()
+                    self.current_dialogue_index += 1
+                    self.show_next_dialogue()
+                    return
+                else:
+                    print("Некорректный else")
 
-            elif not text.startswith(("if ", "elif ", "else")):
-                break
+            else:
+                # Обычная команда - выполняем
+                if not context_stack:
+                    self.current_dialogue_index += 1
+                    self.show_next_dialogue()
+                    return
 
-            new_index += 1
+            self.current_dialogue_index += 1
 
-        if condition_met:
-            self.current_dialogue_index = new_index + 1
+        # Если дошли до конца - показываем следующий доступный диалог
+        while (self.current_dialogue_index < len(self.dialogues) and
+               isinstance(self.dialogues[self.current_dialogue_index], tuple) and
+               len(self.dialogues[self.current_dialogue_index]) == 2 and
+               isinstance(self.dialogues[self.current_dialogue_index][1], str) and
+               self.dialogues[self.current_dialogue_index][1].startswith(("if ", "elif ", "else"))):
+            self.current_dialogue_index += 1
+
+        if self.current_dialogue_index < len(self.dialogues):
+            self.show_next_dialogue()
         else:
-            # Пропускаем весь блок условий
-            while (new_index < len(self.dialogues) and
-                   isinstance(self.dialogues[new_index], tuple) and
-                   len(self.dialogues[new_index]) == 2 and
-                   isinstance(self.dialogues[new_index][1], str) and
-                   self.dialogues[new_index][1].startswith(("if ", "elif ", "else"))):
-                new_index += 1
-            self.current_dialogue_index = new_index
-
-        self.show_next_dialogue()
+            print("Конец диалога")
