@@ -1,7 +1,7 @@
 {
-    "text_speed": 50,
+    "text_speed": 43,
     "autoscroll_speed": 100,
     "music_volume": 16,
-    "sfx_volume": 20,
+    "sfx_volume": 3,
     "fullscreen": true
 }

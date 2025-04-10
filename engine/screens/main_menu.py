@@ -3,6 +3,8 @@ from PyQt5.QtGui import QFont, QMovie, QPixmap
 from PyQt5.QtCore import Qt, QUrl, QTimer
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import json
+
+from engine.screens.game_screen import GameScreen
 from engine.screens.settings_menu import SettingsScreen
 from engine.screens.case_screen import CaseScreen
 
@@ -45,18 +47,31 @@ class MainMenu(QWidget):
             button = self.create_button(text, button_x, button_y, callback)
             button_y += 60
 
-        version_label = QLabel(f"Версия: 0.7", self)
+        version_label = QLabel(f"Версия: 0.8", self)
         version_label.setFont(QFont("Arial", 12))
-        version_label.setStyleSheet("""
-                    color: rgba(200, 200, 200, 200);
-                """)
+        version_label.setStyleSheet("color: rgba(200, 200, 200, 200);")
         version_label.setAlignment(Qt.AlignRight | Qt.AlignBottom)
         self.version_label = version_label
 
     def create_button(self, text, x, y, callback):
         button = QPushButton(text, self)
         button.setFont(QFont("Arial", 24))
-        button.setStyleSheet("background-color: transparent; color: white;")
+
+        button.setStyleSheet("""
+            QPushButton {
+                background-color: transparent; 
+                color: #FFFFFF; 
+                border: none;
+                padding: 10px 20px;
+            }
+            QPushButton:hover {
+                color: #8C8C94; 
+            }
+            QPushButton:pressed {
+                color: #2828F8; 
+            }
+        """)
+
         button.clicked.connect(callback)
         button.move(x, y)
         return button
@@ -109,7 +124,21 @@ class MainMenu(QWidget):
         self.game_engine.start_script("scripts.intro:start")
 
     def load_game(self):
-        print("Загрузка игры...")
+        # Останавливаем музыку главного меню
+        if self.music_player:
+            print("Останавливаю музыку главного меню.")
+            self.music_player.stop()
+
+        # Загружаем сохраненную игру
+        current_screen = self.parent().currentWidget()
+        if isinstance(current_screen, GameScreen):
+            current_screen.load_game()
+        else:
+            print("Текущий экран не является GameScreen. Создаем новый GameScreen.")
+            game_screen = GameScreen(self.parent())
+            self.parent().addWidget(game_screen)
+            self.parent().setCurrentWidget(game_screen)
+            game_screen.load_game()
 
     def open_settings(self):
         if not self.settings_screen:

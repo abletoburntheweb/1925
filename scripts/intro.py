@@ -6,7 +6,6 @@ police = define_character("Полицейский", color="#ffcccb")
 woman = define_character("Женщина", color="#ffcccb")
 
 def scene1():
-    show_chapter("ГЛАВА 1", effect="fade", next_script="scripts.chapter1:start")
     show_scene("town", effect="fade")
     play_music("intro.mp3", loop=True)
 
@@ -16,19 +15,16 @@ def scene1():
     show_scene("facade", effect="dissolve")
     say(narrator, "Человеческая вера, подкрепленная надеждой, становится катализатором перемен.")
     say(narrator, "Она вдохновляет на творчество, на поиски решений и на стремление к справедливости.")
-    stop_music()
     say(narrator, "Однако, это довольно сильный инструмент в руках мастера.")
 
     show_scene("window_out", effect="fade")
 
     show_scene("window_out1", effect="dissolve")
     say(narrator, "Понять человеческую натуру не так уж и сложно, как кажется на первый взгляд.")
-    play_music("sample1.mp3", loop=True)
 
     say(narrator,"Их движения рук или мимики лица будут выдавать истинные намерения, даже если они превосходные лгуны, язык тела не даст соврать.")
     say(narrator, "Они будут скрещивать руки, не желая с вами разговаривать, подобно раздражённой жене, встречающей в глубокой ночи своего мужа, который вернулся поздно.")
     say(narrator, "В её взгляде будет холод, как у хищника, готовящегося к атаке, а движения будут резкими и напряжёнными, словно она прячет в кармане нож, который наконец освободит её от «проблем».")
-    stop_music()
     show_scene("window_out2", effect="hpunch")
     play_sfx("door.mp3")
     say(narrator, "Он будет прятать глаза, как будто боится, что его тайны станут явными, и каждый взгляд может выдать его увлечение, из-за которых он возвращается позже домой.")
@@ -40,7 +36,6 @@ def scene1():
 def scene2():
 
     show_scene("window_in1", effect="fade")
-    play_music("sample2.mp3", loop=True)
 
     say(narrator, "И так будет до тех пор, пока одной такой ночью, когда луна скрылась за густой хмарой, а гул сирен раздался в тишине, как зловещая мелодия, прерывающая сны соседей.")
     say(narrator, "Их глаза, полные недоумения и любопытства, открывались с трудом, а в головах роились вопросы: «что же произошло?»")
@@ -52,7 +47,7 @@ def scene2():
 
     show_scene("door_open", effect="dissolve")
 
-    show_character("policeman", position="right")
+    show_character("policeman", position="right", effect="Fade")
     say(police, "Вы не видели её сегодня?")
 
     show_character("Kass_wife", position="left")

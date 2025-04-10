@@ -25,7 +25,24 @@ class GameEngine(QStackedWidget):
         global game_engine
         game_engine = self
 
+        self.current_script = None
+
         self.init_screens()
+
+    def load_game(self):
+        current_screen = self.currentWidget()
+        if not isinstance(current_screen, GameScreen):
+            print("Текущий экран не является GameScreen. Создаем новый GameScreen.")
+            game_screen = GameScreen(self)
+            self.addWidget(game_screen)
+            self.setCurrentWidget(game_screen)
+            current_screen = game_screen
+        else:
+            print("Текущий экран уже является GameScreen.")
+        if hasattr(current_screen, "load_game"):
+            current_screen.load_game()
+        else:
+            print("Ошибка: Текущий экран не поддерживает метод load_game.")
 
     def init_screens(self):
         # Инициализация экранов
@@ -50,9 +67,10 @@ class GameEngine(QStackedWidget):
     def start_script(self, script_path):
         print(f"Запускаю сценарий: {script_path}")
 
-        #self.clear_window() было прекращено, так как текущая система стеков позволяет обойтись без этого
-
         try:
+            # Сохраняем текущий скрипт
+            self.current_script = script_path
+
             module_name, function_name = script_path.split(":")
             module = importlib.import_module(module_name)
             script_function = getattr(module, function_name)
@@ -99,8 +117,8 @@ def stop_music():
 def play_sfx(file_name):
     game_engine.currentWidget().play_sfx(file_name)
 
-def show_character(character_name, position="center"):
-    game_engine.currentWidget().show_character(character_name, position)
+def show_character(character_name, position="center", effect="Fade"):
+    game_engine.currentWidget().show_character(character_name, position, effect)
 
 def hide_character(character_name):
     game_engine.currentWidget().hide_character(character_name)

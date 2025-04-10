@@ -59,6 +59,7 @@ class SettingsScreen(QWidget):
         self.fullscreen_checkbox.stateChanged.connect(self.update_settings)
         self.fullscreen_checkbox.setGeometry(800, 600, 300, 50)
 
+
         back_button = QPushButton("Назад", self)
         back_button.setFont(QFont("Arial", 20))
         back_button.setStyleSheet("""

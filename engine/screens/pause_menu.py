@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
 from engine.screens.settings_menu import SettingsScreen
 from PyQt5.QtGui import QFont, QPixmap
 
-
 class PauseMenu(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -32,28 +31,38 @@ class PauseMenu(QWidget):
         ]
 
         for text, callback in buttons_data:
-            button = self.create_button(text, callback)
-            button.move(button_x, button_y)
+            button = self.create_button(text, button_x, button_y, callback)
             button_y += 60
 
-    def create_button(self, text, callback):
-
+    def create_button(self, text, x, y, callback):
         button = QPushButton(text, self)
         button.setFont(QFont("Arial", 24))
+
         button.setStyleSheet("""
             QPushButton {
-                background-color: transparent;
-                color: white;
+                background-color: transparent; 
+                color: #FFFFFF; 
+                border: none;
+                padding: 10px 20px;
+            }
+            QPushButton:hover {
+                color: #8C8C94;  
+            }
+            QPushButton:pressed {
+                color: #2828F8; 
             }
         """)
+
         button.clicked.connect(callback)
+        button.move(x, y)
         return button
 
     def resume_game(self):
         self.hide()
 
     def save_game(self):
-        print("Сохранение игры...")
+        self.parent().save_game()
+        print("Игра сохранена.")
 
     def exit_game(self):
         self.parent().exit_game()
