@@ -6,7 +6,6 @@ import json
 from engine.screens.settings_menu import SettingsScreen
 from engine.screens.case_screen import CaseScreen
 
-
 class MainMenu(QWidget):
     def __init__(self, game_engine):
         super().__init__()

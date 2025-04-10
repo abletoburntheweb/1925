@@ -6,8 +6,6 @@ police = define_character("Полицейский", color="#ffcccb")
 woman = define_character("Женщина", color="#ffcccb")
 
 def scene1():
-
-
     show_scene("town", effect="fade")
     play_music("intro.mp3", loop=True)
 
@@ -21,7 +19,6 @@ def scene1():
     say(narrator, "Однако, это довольно сильный инструмент в руках мастера.")
 
     show_scene("window_out", effect="fade")
-
 
     show_scene("window_out1", effect="dissolve")
     say(narrator, "Понять человеческую натуру не так уж и сложно, как кажется на первый взгляд.")
@@ -57,12 +54,11 @@ def scene2():
     show_character("policeman", position="right")
     say(police, "Вы не видели её сегодня?")
 
-    show_character("neighbor", position="left")
+    show_character("Kass_wife", position="left")
     say(woman, "Как это возможно? Они всегда были такими счастливыми.")
 
     hide_character("policeman")
-    hide_character("neighbor")
-
+    hide_character("Kass_wife")
 
     show_scene("window_in", effect="fade")
     say(narrator, "Что же произошло на самом деле? Возможно, это была жена, уставшая от предательства, или любовница, готовая на крайние меры.")
@@ -75,6 +71,8 @@ def scene2():
     say(narrator, "Или, может быть, всё гораздо сложнее?")
     say(narrator, "В этой паутине интриг и страстей, где каждый может стать жертвой или преступником, истина остается скрытой, как луна за облаками. Ночь, полная загадок.")
 
+    stop_music()
+    show_scene("lib", effect="fade")
     show_chapter("ГЛАВА 1", effect="fade", next_script="scripts.chapter1:start")
 
 def start():

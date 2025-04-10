@@ -13,10 +13,9 @@ def load_settings():
             "text_speed": 50,
             "autoscroll_speed": 50,
             "music_volume": 50,
-            "sound_volume": 50,
+            "sfx_volume": 50,
             "fullscreen": False
         }
-
 
 def save_settings(settings):
     with open("engine/settings.json", "w", encoding="utf-8") as file:
@@ -24,13 +23,14 @@ def save_settings(settings):
 
 
 class SettingsScreen(QWidget):
-    def __init__(self, parent=None, music_player=None):
+    def __init__(self, parent=None, music_player=None, sfx_player=None):
         super().__init__(parent)
         self.setWindowTitle("Настройки")
         self.setFixedSize(1920, 1080)
 
         self.music_player = music_player
         self.settings = load_settings()
+        self.sfx_player = sfx_player
 
         self.background_label = QLabel(self)
         pixmap = QPixmap("assets/png/settings_menu.png")
@@ -49,7 +49,9 @@ class SettingsScreen(QWidget):
 
         self.music_volume_slider = self.add_slider(800, 500, "Громкость музыки", self.settings["music_volume"])
         self.music_volume_slider.valueChanged.connect(self.set_music_volume)
-        self.sound_volume_slider = self.add_slider(800, 550, "Громкость звуков", self.settings["sound_volume"])
+
+        self.sfx_volume_slider = self.add_slider(800, 550, "Громкость SFX", self.settings["sfx_volume"])  # Новый слайдер
+        self.sfx_volume_slider.valueChanged.connect(self.set_sfx_volume)  # Обработчик
 
         self.fullscreen_checkbox = QCheckBox("Полноэкранный режим", self)
         self.fullscreen_checkbox.setFont(QFont("Arial", 18))
@@ -80,7 +82,7 @@ class SettingsScreen(QWidget):
         self.text_speed_slider.valueChanged.connect(self.update_settings)
         self.autoscroll_speed_slider.valueChanged.connect(self.update_settings)
         self.music_volume_slider.valueChanged.connect(self.update_settings)
-        self.sound_volume_slider.valueChanged.connect(self.update_settings)
+        self.sfx_volume_slider.valueChanged.connect(self.update_settings)
 
     def add_slider(self, x, y, text, default_value=50):
         label = QLabel(text, self)
@@ -117,20 +119,22 @@ class SettingsScreen(QWidget):
         self.settings["text_speed"] = self.text_speed_slider.value()
         self.settings["autoscroll_speed"] = self.autoscroll_speed_slider.value()
         self.settings["music_volume"] = self.music_volume_slider.value()
-        self.settings["sound_volume"] = self.sound_volume_slider.value()
+        self.settings["sfx_volume"] = self.sfx_volume_slider.value()  # Сохраняем громкость SFX
         self.settings["fullscreen"] = self.fullscreen_checkbox.isChecked()
 
         save_settings(self.settings)
 
         game_engine = self.parent().game_engine
         if self.settings["fullscreen"]:
-            #print("Переход в полноэкранный режим")
             game_engine.showFullScreen()
         else:
-            #print("Выход из полноэкранного режима")
             game_engine.showNormal()
             game_engine.move(0, 0)
 
     def set_music_volume(self, value):
         if self.music_player is not None:
             self.music_player.setVolume(value)
+
+    def set_sfx_volume(self, value):
+        if self.sfx_player is not None:
+            self.sfx_player.setVolume(value)

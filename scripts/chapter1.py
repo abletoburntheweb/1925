@@ -2,7 +2,7 @@ from engine.game_logic import define_character, say, show_scene, play_music, sho
     show_chapter
 
 narrator = define_character(None, color="#c8c8ff")
-detective = define_character("Детектив", color="#ffcccb")
+detective = define_character("Уильям", color="#ffcccb")
 alan = define_character("Алан Хант", color="#ffcccb")
 francis = define_character("Френсис Миллер", color="#ffcccb")
 boy = define_character("Мальчик", color="#ffcccb")
@@ -186,11 +186,15 @@ def scene3():
 
     # "Попросить газету"
     say(None, "elif choice_result == 'ask_for_newspaper'")
+    vibor()
+
+def vibor():
+    say(narrator, None)
     choice([
-        ("Убедить 1", "convince_1"),
-        ("Убедить 2", "convince_2"),
-        ("Обмануть 1", "trick_1"),
-        ("Обмануть 2", "trick_2")
+        ("Заплатить часть", "convince_1"),
+        ("Сказать, что ты представитель закона", "convince_2"),
+        ("Предложить конфеты", "trick_1"),
+        ("Сказать, что знаком с его мамой", "trick_2")
     ])
 
     # Убеждение 1

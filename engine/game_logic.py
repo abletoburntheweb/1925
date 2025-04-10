@@ -77,9 +77,6 @@ class GameEngine(QStackedWidget):
         QApplication.quit()
 
     def toggle_fullscreen(self, fullscreen):
-        """
-        Переключает между полноэкранным и оконным режимами.
-        """
         if fullscreen:
             self.showFullScreen()  # Полноэкранный режим
         else:

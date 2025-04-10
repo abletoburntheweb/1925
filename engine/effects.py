@@ -17,7 +17,7 @@ def fade(widget, duration=500):
     widget.animation = animation
     animation.start()
 
-def dissolve(widget, duration=700):
+def dissolve(widget, duration=450):
     class DissolveOverlay(QWidget):
         def __init__(self, parent=None):
             super().__init__(parent)
@@ -31,7 +31,7 @@ def dissolve(widget, duration=700):
             rect = self.rect()
             painter.fillRect(rect, QColor(0, 0, 0, int(255 * self.noise_level)))
 
-    steps = 50
+    steps = 25
     interval = duration // steps
     noise_level = 1.0
 
@@ -89,12 +89,6 @@ def slide_in_from_left(widget, position="center", duration=500):
 
 
 def slide_out_to_right(widget, position="center", duration=500):
-    """
-    Альтернативный эффект ухода направо без QPropertyAnimation.
-    :param widget: Виджет, к которому применяется эффект.
-    :param position: Начальная позиция ("left", "right", "center").
-    :param duration: Длительность эффекта в миллисекундах.
-    """
     positions = {"left": 100, "right": 1200, "center": 600}
     start_x = positions.get(position, 600)
     end_x = 1920 + widget.width()
