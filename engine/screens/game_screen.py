@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtCore import QUrl
-from engine.effects import fade, dissolve, hpunch, slide_out_to_right
+from engine.effects import fade, dissolve, hpunch, slide_out_to_right, hider
 from engine.screens.dialog_history_screen import DialogHistoryScreen
 from engine.screens.notebook import Notebook
 from engine.screens.pause_menu import PauseMenu
@@ -20,6 +20,10 @@ class GameScreen(QWidget):
         self.layout = QStackedLayout()
         self.setLayout(self.layout)
         self.settings_screen = None
+
+        self.at_scroll_timer = QTimer(self)
+        self.at_scroll_timer.timeout.connect(self.show_next_dialogue)
+        self.at_scroll = False
 
         # Фон сцены
         self.background_label = QLabel(self)
@@ -39,7 +43,7 @@ class GameScreen(QWidget):
         # Контейнер для текста (располагается поверх textbox.png)
         self.text_layout = QVBoxLayout(self.text_container)
         self.text_layout.setAlignment(Qt.AlignTop)
-        self.text_layout.setContentsMargins(470, 800, 520, 100)  # Отступы для центрирования
+        self.text_layout.setContentsMargins(470, 750, 520, 0)  # Отступы для центрирования
         self.text_container.setLayout(self.text_layout)
 
         # Добавляем контейнер текста в макет
@@ -96,7 +100,6 @@ class GameScreen(QWidget):
         self.notebook.raise_()
         self.notebook.tabs_container.raise_()
         self.notebook.close_notebook_button.raise_()
-
     def settings(self):
         global music_player
         if not self.settings_screen:
@@ -107,15 +110,37 @@ class GameScreen(QWidget):
         self.settings_screen.show()
 
     def keyPressEvent(self, event):
-        if self.choice_container and self.choice_container.isVisible():
-            return
-        elif event.key() == Qt.Key_J:
+        if event.key() == Qt.Key_Right:
+            if self.choice_container and self.choice_container.isVisible() or self.pause_menu.isVisible() or self.notebook.is_notebook_active:
+                return
+            else:
+                self.at_scroll = not self.at_scroll
+                try:
+                    with open("engine/settings.json", "r", encoding="utf-8") as file:
+                        settings = json.load(file)
+                except FileNotFoundError:
+                    settings = {"autoscroll_speed": 50}
+                self.scroll_speed = 200 - settings.get("autoscroll_speed", 50)
+
+                if self.at_scroll:
+                    self.at_scroll_timer.start(self.scroll_speed)
+                else:
+                    self.at_scroll_timer.stop()
+                return
+        if event.key() == Qt.Key_J:
+            if self.choice_container and self.choice_container.isVisible():
+                return
             if not self.pause_menu.isVisible():
                 print("Нажата клавиша J.")
+                self.at_scroll = False
+                self.at_scroll_timer.stop()
                 self.notebook.toggle_notebook()
+
                 return
-        elif event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key_Escape:
             print("Нажата клавиша ESC.")
+            self.at_scroll = False
+            self.at_scroll_timer.stop()
             if self.notebook.is_notebook_active:
                 self.notebook.toggle_notebook()
                 return
@@ -127,25 +152,26 @@ class GameScreen(QWidget):
             else:
                 self.resume_game()
             return
-        if self.pause_menu.isVisible() or self.notebook.is_notebook_active:
-            return
         if event.key() == Qt.Key_Space:
+            if self.choice_container and self.choice_container.isVisible():
+                return
+            if self.pause_menu.isVisible() or self.notebook.is_notebook_active:
+                return
             print("Нажата клавиша пробел.")
             if not self.history_screen.isVisible():
                 self.show_next_dialogue()
 
     def mousePressEvent(self, event):
-        if self.choice_container and self.choice_container.isVisible():
-            return
-
         if self.pause_menu.isVisible() or self.notebook.is_notebook_active:
             return
 
         if event.button() == Qt.LeftButton:
+            if self.choice_container and self.choice_container.isVisible():
+                return
             print("Нажата левая кнопка мыши.")
             if not self.history_screen.isVisible():
                 self.show_next_dialogue()
-        elif event.button() == Qt.RightButton:
+        elif event.button() == Qt.RightButton :
             print("Нажата правая кнопка мыши.")
             if self.history_screen.isVisible():
                 self.history_screen.hide()
@@ -161,6 +187,7 @@ class GameScreen(QWidget):
         self.pause_menu.hide()
         self.text_container.show()
         self.character_layer.show()
+        self.setFocus()
 
     def exit_game(self):
         print("Бекаем")
@@ -272,7 +299,6 @@ class GameScreen(QWidget):
             self.show_next_dialogue()
             return
 
-        # Отображение обычного текста
         if isinstance(character, Character):
             if character.name:
                 name_label = QLabel(f"<font color='{character.color}'><b>{character.name}</b></font>")
@@ -341,9 +367,7 @@ class GameScreen(QWidget):
 
             elif not text.startswith(("if ", "elif ", "else")):
                 break
-
             current_index += 1
-
         return condition_met, current_index
 
     def show_scene(self, scene_name, effect="none"):
@@ -372,6 +396,8 @@ class GameScreen(QWidget):
             dissolve(self.background_label)
         elif effect == "hpunch":
             hpunch(self.background_label)
+        elif effect == "hider":
+            hider(self.background_label)
         elif effect == "slide_out_to_right":
             slide_out_to_right(self.background_label)
         self.update()
@@ -473,6 +499,7 @@ class GameScreen(QWidget):
         print("Начинаем воспроизведение звукового эффекта.")
         QTimer.singleShot(100, sfx_player.play)
 
+
     def show_character(self, character_name, position="center"):
         #print(f"Добавляю команду показа персонажа: {character_name} ({position})")
         self.dialogues.append(("__SHOW__", character_name, position))
@@ -491,12 +518,12 @@ class GameScreen(QWidget):
         else:
             character_label = QLabel(self)
             self.character_labels[character_name] = character_label
-        character_label.setPixmap(pixmap.scaledToHeight(800, Qt.SmoothTransformation))
-        character_label.setFixedSize(800, 1080)
+        character_label.setPixmap(pixmap.scaledToHeight(900, Qt.SmoothTransformation))
+        character_label.setFixedSize(900, 1080)
         character_label.setScaledContents(True)
 
-        positions = {"left": 100, "right": 1200, "center": 600}
-        character_label.move(positions.get(position, 600), 200)
+        positions = {"left": -100, "right": 1100, "center": 500}
+        character_label.move(positions.get(position, 500), 100)
         character_label.show()
 
         character_label.raise_()
@@ -520,6 +547,7 @@ class GameScreen(QWidget):
             character.hide()
 
     def a_show_chapter(self, chapter_title, effect="fade", next_script=None):
+        self.textbox_label.hide()
         chapter_label = QLabel(chapter_title, self)
         chapter_label.setAlignment(Qt.AlignCenter)
         chapter_label.setStyleSheet("""
@@ -549,9 +577,11 @@ class GameScreen(QWidget):
 
     def a_show_choices(self, options):
         print("Отображаю варианты...")
+        self.at_scroll_timer.stop()
+        self.at_scroll = False
+
         if self.choice_container:
             self.choice_container.deleteLater()
-
         self.choice_container = QWidget(self)
         self.choice_container.setFixedSize(1215, len(options) * 80 + 120)
         self.choice_container.move((self.width() - 1215) // 2, (self.height() - (len(options) * 80 + 120)) // 2)
@@ -569,12 +599,35 @@ class GameScreen(QWidget):
             button.setFont(QFont("Arial", 24))
             button.setStyleSheet("""
                 QPushButton {
-                    background-color: rgba(0, 0, 0, 200);
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0, 
+                        stop: 0 rgba(0, 0, 0, 0),
+                        stop: 0.25 rgba(0, 0, 0, 200),
+                        stop: 0.75 rgba(0, 0, 0, 200),
+                        stop: 1 rgba(0, 0, 0, 0)
+                    );
                     color: white;
                     border: none;
+                    text-align: center;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0, 
+                        stop: 0 rgba(0, 0, 0, 0),
+                        stop: 0.25 rgba(50, 50, 50, 200),
+                        stop: 0.75 rgba(50, 50, 50, 200),
+                        stop: 1 rgba(0, 0, 0, 0)
+                    );
                 }
                 QPushButton:pressed {
-                    background-color: rgba(220, 200, 220, 200);
+                    background: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 0, 
+                        stop: 0 rgba(0, 0, 0, 0),
+                        stop: 0.25 rgba(0, 0, 0, 255),
+                        stop: 0.75 rgba(0, 0, 0, 255),
+                        stop: 1 rgba(0, 0, 0, 0)
+                    );
+                    color: rgba(200, 200, 200, 200);
                 }
             """)
             button.clicked.connect(create_handler(value))
@@ -600,6 +653,7 @@ class GameScreen(QWidget):
         if self.choice_container:
             self.choice_container.hide()
 
+        self.setFocus()
         original_index = self.current_dialogue_index
         new_index = original_index
 

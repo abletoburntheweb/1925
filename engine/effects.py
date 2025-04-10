@@ -43,14 +43,47 @@ def dissolve(widget, duration=450):
         noise_level -= 1 / steps
         overlay.noise_level = max(0, noise_level)
         overlay.update()
-        if noise_level <= 0:
-            timer.stop()
-            overlay.hide()
-            overlay.deleteLater()
 
     timer = QTimer()
     timer.start(interval)
     timer.timeout.connect(update_noise)
+    QTimer.singleShot(duration, lambda: timer.stop())
+    QTimer.singleShot(duration, lambda: overlay.deleteLater())
+
+def hider(widget, duration=500, param=False):
+    class HiderOverlay(QWidget):
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.setParent(parent)
+            self.setFixedSize(parent.size())
+            self.setAttribute(Qt.WA_TransparentForMouseEvents)
+            self.opacity = 0.0
+
+        def paintEvent(self, event):
+            painter = QPainter(self)
+            rect = self.rect()
+            color = QColor(0, 0, 0, int(255 * self.opacity))
+            painter.fillRect(rect, color)
+
+    steps = 25
+    interval = duration // steps
+    opacity_step = 1 / steps
+
+    overlay = HiderOverlay(widget)
+    overlay.show()
+
+    def update_opacity():
+        nonlocal opacity
+        opacity += opacity_step
+        overlay.opacity = min(1.0, opacity)
+        overlay.update()
+
+    opacity = 0.0
+    timer = QTimer()
+    timer.timeout.connect(update_opacity)
+    timer.start(interval)
+    QTimer.singleShot(duration, lambda: timer.stop())
+    QTimer.singleShot(duration, lambda: overlay.deleteLater())
 
 
 

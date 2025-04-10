@@ -35,7 +35,7 @@ class MainMenu(QWidget):
         button_y = 350
         buttons_data = [
             ("НАЧАТЬ", self.start_new_game),
-            ("ЗАГРУЗИТЬ", self.load_game),
+            ("ПРОДОЛЖИТЬ", self.load_game),
             ("НАСТРОЙКИ", self.open_settings),
             ("ДОСЬЕ", self.open_case_screen),
             ("ВЫХОД", self.game_engine.exit_game),
@@ -45,8 +45,8 @@ class MainMenu(QWidget):
             button = self.create_button(text, button_x, button_y, callback)
             button_y += 60
 
-        version_label = QLabel(f"Версия: 0.6", self)
-        version_label.setFont(QFont("Arial", 18))
+        version_label = QLabel(f"Версия: 0.7", self)
+        version_label.setFont(QFont("Arial", 12))
         version_label.setStyleSheet("""
                     color: rgba(200, 200, 200, 200);
                 """)

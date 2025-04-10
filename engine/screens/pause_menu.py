@@ -26,7 +26,6 @@ class PauseMenu(QWidget):
 
         buttons_data = [
             ("ПРОДОЛЖИТЬ", self.resume_game),
-            ("ЗАГРУЗИТЬ", self.load_game),
             ("СОХРАНИТЬ", self.save_game),
             ("НАСТРОЙКИ", self.settings),
             ("ГЛАВНОЕ МЕНЮ", self.exit_game),
@@ -52,9 +51,6 @@ class PauseMenu(QWidget):
 
     def resume_game(self):
         self.hide()
-
-    def load_game(self):
-        print("Загрузка игры...")
 
     def save_game(self):
         print("Сохранение игры...")

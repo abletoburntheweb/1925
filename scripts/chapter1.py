@@ -12,7 +12,9 @@ bartender = define_character("Бармен", color="#ffcccb")
 def scene1():
     # Сцена 1: Кабинет детектива
     show_scene("detective_office", effect="fade")
-    play_music("music1.mp3", loop=True)
+    play_music("sample3.mp3", loop=True)
+
+    say(detective, "Господин, вам не кажется, что всё в нашем мире циклично?")
 
     show_character("detective", position="left")
     say(detective, "Господин, вам не кажется, что всё в нашем мире циклично?")
@@ -35,7 +37,7 @@ def scene1():
     say(narrator,
         "Каждое движение и каждое слово казались сейчас опасными, словно они были последними в его жизни.")
 
-    show_scene("newspaper", effect="hpunch")
+    show_scene("detective_office", effect="hpunch")
     say(narrator,
         "Внезапно мужчина с тихим хлопком швырнул газету на стол прямо перед юношей. На развороте, подобно змеиному шипению, кричали заголовки о ночном убийстве.")
     say(narrator,
@@ -56,8 +58,11 @@ def scene1():
     hide_character("detective")
     say(narrator,
         "Парень замер от неожиданных слов, но возражать не стал. Он поднял с пола свой портфель, бросил прощальный взгляд и вышел из кабинета.")
+    show_scene("hallway", effect="dissolve")
+    show_scene("hallway", effect="hpunch")
     say(narrator,
         "Шаги его звучали как эхо в бесконечном коридоре, каждый из них добавлял ускорение, словно он стремился вырваться из этого места.")
+    show_scene("hallway", effect="hpunch")
     show_scene("street", effect="fade")
     say(narrator,
         "Когда он наконец вышел на улицу, на его лицо упали тёплые лучи солнца. Он глубоко вдохнул, наполняя лёгкие свежестью.")
@@ -70,7 +75,7 @@ def scene1():
 def scene2():
     # Сцена 2: Встреча двух друзей
     show_scene("street", effect="fade")
-    play_music("music2.mp3", loop=True)
+    play_music("sample1.mp3", loop=True)
 
     show_character("alan", position="center")
     say(narrator,
@@ -80,10 +85,11 @@ def scene2():
     say(narrator,
         "Она была лёгкой, но под её весом парень почувствовал, как будто кости чуть не треснули.")
 
-    show_character("francis", position="right")
+    show_character("alan", position="right")
     say(francis, "Здоров!")
     say(narrator,
         "Произнёс высокий темноволосый парень, который выглядел не старше его. На его лице играла ухмылка.")
+    show_character("francis", position="left")
     say(francis, "Зачем ты ходил к Тенненту?")
     say(alan, "Да, ты не представляешь...")
     say(narrator,
@@ -118,6 +124,8 @@ def scene2():
     say(narrator,
         "Протянув её другу, он почувствовал, как в воздухе повисло напряжение. Как только лист оказался в руках, след юноши словно растворился в воздухе, оставив друга наедине со своими мыслями.")
     show_scene("newspaper_piece", effect="dissolve")
+    hide_character("alan")
+    hide_character("francis")
     say(francis, "Убийство Кассиуса Ханта...")
     say(narrator,
         "Френсис Миллер стал рассматривать кусок бумаги, как его глаза зацепились за буквы об убийстве Кассиуса Ханта.")
@@ -127,8 +135,8 @@ def scene2():
 
 def scene3():
     # Сцена 3: Путь к бару
-    show_scene("city_streets", effect="fade")
-    play_music("music2.mp3", loop=True)
+    show_scene("street", effect="fade")
+    play_music("sample2.mp3", loop=True)
 
     say(narrator,
         "Френсис не придал этому никакого внимания.")
@@ -153,6 +161,13 @@ def scene3():
 
     # "Купить газету"
     say(None, "if choice_result == 'buy_newspaper'")
+    buy()
+    # "Попросить газету"
+    say(None, "elif choice_result == 'ask_for_newspaper'")
+    vibor()
+
+def buy():
+
     say(francis, "Молодой человек, я куплю у вас газету.")
     say(boy, "Накинешь мне ещё монет?")
 
@@ -184,9 +199,8 @@ def scene3():
     say(narrator,
         "Вырезка из газеты: Загадочная смерть мистера Ханта...")
 
-    # "Попросить газету"
-    say(None, "elif choice_result == 'ask_for_newspaper'")
-    vibor()
+    scene4()
+
 
 def vibor():
     say(narrator, None)
@@ -217,6 +231,7 @@ def vibor():
     show_scene("newspaper_article", effect="dissolve")
     say(narrator,
         "Вырезка из газеты: Загадочная смерть мистера Ханта...")
+    scene4()
 
     # "Нет" (убеждение 1)
     say(None, "elif choice_result == 'convince_1_no'")
@@ -226,6 +241,7 @@ def vibor():
     show_scene("newspaper_article", effect="dissolve")
     say(narrator,
         "Вырезка из газеты: Загадочная смерть мистера Ханта...")
+    scene4()
 
     # Убеждение 2
     say(None, "elif choice_result == 'convince_2'")
@@ -242,6 +258,7 @@ def vibor():
     show_scene("newspaper_article", effect="dissolve")
     say(narrator,
         "Вырезка из газеты: Загадочная смерть мистера Ханта...")
+    scene4()
 
     # Обман 1
     say(None, "elif choice_result == 'trick_1'")
@@ -254,6 +271,7 @@ def vibor():
     show_scene("newspaper_article", effect="dissolve")
     say(narrator,
         "Вырезка из газеты: Загадочная смерть мистера Ханта...")
+    scene4()
 
     # Обман 2
     say(None, "elif choice_result == 'trick_2'")
@@ -265,19 +283,22 @@ def vibor():
     show_scene("newspaper_article", effect="dissolve")
     say(narrator,
         "Вырезка из газеты: Загадочная смерть мистера Ханта...")
-
-    say(narrator,
-        "Прочитав это, он отправился дальше.")
-    say(narrator,
-        "Наконец, он достиг своего пункта назначения — «Герцога», заведения, которое манило его атмосферой таинственности.")
-    show_scene("bar_exterior", effect="fade")
-
     scene4()
 
 
 def scene4():
+    hide_character("boy")
+
+    say(narrator,
+        "Прочитав это, он отправился дальше.")
+
+    show_scene("bar_outside", effect="fade")
+    say(narrator,
+        "Наконец, он достиг своего пункта назначения — «Герцога», заведения, которое манило его атмосферой таинственности.")
+    show_scene("bar_outside", effect="hider")
+
     # Сцена 4: Бар "Герцог"
-    show_scene("bar", effect="fade")
+    show_scene("bar", effect="dissolve")
     play_music("music2.mp3", loop=True)
 
     say(narrator,
@@ -293,8 +314,16 @@ def scene4():
         ("Нет", "decline_offer")
     ])
 
+
     # "Нет"
     say(None, "if choice_result == 'decline_offer'")
+    no_drinks()
+    # "Да"
+    say(None, "if choice_result == 'accept_offer'")
+    say_y_to_drins_say_y_to_funn()
+
+
+def no_drinks():
     say(narrator,
         "Бармен, с доброй улыбкой и проницательными глазами, налил ему напиток и завёл непринуждённый разговор.")
     say(bartender, "Вы не слышали о ночном убийстве?")
@@ -349,6 +378,7 @@ def scene4():
         "Заплатив за алкоголь и сигареты, Миллер вышел из бара, оставив за собой атмосферу таинственности и недосказанности, которая всё ещё витала в воздухе.")
     say(narrator,
         "Он направился к дому Алана Ханта.")
+    scene5()
 
     # "Я не курю"
     say(None, "elif choice_result == 'refuse_cigarettes'")
@@ -357,9 +387,9 @@ def scene4():
         "Заплатив за алкоголь, Миллер вышел из бара, оставив за собой атмосферу таинственности и недосказанности, которая всё ещё витала в воздухе.")
     say(narrator,
         "Он направился к дому Алана Ханта.")
+    scene5()
 
-    # "Да"
-    say(None, "if choice_result == 'accept_offer'")
+def say_y_to_drins_say_y_to_funn():
     say(narrator,
         "В этот момент Миллер решил не противоречь своим желаниям.")
     say(francis, "Давай")
@@ -406,10 +436,10 @@ def scene4():
 
     # Предложить бармену выпить вместе
     choice([
-        ("Давить на жалость, что одиноко", "play_pity"),
-        ("Политика", "politics"),
+        ("Давить на жалость", "play_pity"),
+        ("Вспомнить что-то из книги Маркса", "politics"),
         ("Промолчать", "stay_silent"),
-        ("Обвинить бармена", "accuse_bartender")
+        ("Да ты просто не умеешь пить!", "accuse_bartender")
     ])
 
     # "Политика"
@@ -421,6 +451,7 @@ def scene4():
     say(narrator,
         "Миллер, видя смущение бармена, начинает смеяться, и это немного разряжает атмосферу. Он осознает, что даже в таком состоянии может вызвать улыбку у другого. Но тем не менее бармен предпочёл общество других людей.")
     say(narrator, "Он направился к дому Алана Ханта.")
+    scene5()
 
     # "Давить на жалость, что одиноко"
     say(None, "elif choice_result == 'play_pity'")
@@ -465,7 +496,8 @@ def scene4():
     say(bartender, "Увидимся позже! Мне нужно отлучиться, но я вернусь. Не скучай!")
     say(narrator,
         "Бармен скрывается за дверью для персонала, оставляя Миллера с пачкой сигарет и пустым стаканом.")
-    say(narrator, "Оставь деньги на столе, он вышел и направился к дому Алана Ханта.")
+    say(narrator, "Оставив деньги на столе, он вышел и направился к дому Алана Ханта.")
+    scene5()
 
     # "Я не курю" ("Давить на жалость")
     say(None, "elif choice_result == 'refuse_cigarettes_pity'")
@@ -486,6 +518,7 @@ def scene4():
         "Он направляется к двери для персонала, покидая свой пост и оставляя Миллера наедине с его мыслями.")
     say(francis, "Иногда, кажется, все мы ищем свой путь…")
     say(narrator, "Он направился к дому Алана Ханта.")
+    scene5()
 
     # "Промолчать"
     say(None, "elif choice_result == 'stay_silent'")
@@ -505,13 +538,15 @@ def scene4():
     say(narrator,
         "После бармен скрывается за дверью для персонала, оставляя Миллера с пустым стаканом.")
     say(narrator, "Миллер вышел и направился к дому Алана Ханта.")
+    scene5()
 
     # "Я не курю" ("Промолчать")
     say(None, "elif choice_result == 'refuse_cigarettes_silent'")
     say(francis, "Нет, спасибо. Я не курю.")
     say(narrator,
         "Бармен скрывается за дверью для персонала, оставляя Миллера с пустым стаканом.")
-    say(narrator, "Оставь деньги на столе, он вышел и направился к дому Алана Ханта.")
+    say(narrator, "Оставив деньги на столе, он вышел и направился к дому Алана Ханта.")
+    scene5()
 
     # "Обвинить бармена"
     say(None, "elif choice_result == 'accuse_bartender'")
@@ -560,6 +595,7 @@ def scene4():
     say(narrator,
         "После бармен скрывается за дверью для персонала, оставляя Миллера с почкой сигарет и пустым стаканом.")
     say(narrator, "Миллер вышел и направился к дому Алана Ханта.")
+    scene5()
 
     # "Нет" ("Обвинить бармена")
     say(None, "elif choice_result == 'refuse_to_pay'")
@@ -582,6 +618,7 @@ def scene4():
     say(narrator,
         "После бармен скрывается за дверью для персонала, оставляя Миллера с почкой сигарет и пустым стаканом.")
     say(narrator, "Миллер вышел и направился к дому Алана Ханта.")
+    scene5()
 
     # "Нет" ("Обвинить бармена")
     say(None, "elif choice_result == 'final_refusal'")
@@ -597,11 +634,11 @@ def scene4():
     say(narrator,
         "Он вздохнул, глядя на бармена, который уже обслуживал другого клиента, и понимал, что вечер все еще может принести неожиданные сюрпризы.")
     say(narrator, "Миллер вышел и направился к дому Алана Ханта.")
-
     scene5()
 
 
 def scene5():
+
     # Сцена 5: "Разговор с Аланом Хантом"
     say(narrator,
         "Шагая по вечерним улицам, Миллер уже знал, что бармены собирают информацию об этом преступлении. "

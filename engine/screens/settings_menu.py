@@ -49,7 +49,6 @@ class SettingsScreen(QWidget):
 
         self.music_volume_slider = self.add_slider(800, 500, "Громкость музыки", self.settings["music_volume"])
         self.music_volume_slider.valueChanged.connect(self.set_music_volume)
-
         self.sfx_volume_slider = self.add_slider(800, 550, "Громкость SFX", self.settings["sfx_volume"])  # Новый слайдер
         self.sfx_volume_slider.valueChanged.connect(self.set_sfx_volume)  # Обработчик
 
@@ -119,7 +118,7 @@ class SettingsScreen(QWidget):
         self.settings["text_speed"] = self.text_speed_slider.value()
         self.settings["autoscroll_speed"] = self.autoscroll_speed_slider.value()
         self.settings["music_volume"] = self.music_volume_slider.value()
-        self.settings["sfx_volume"] = self.sfx_volume_slider.value()  # Сохраняем громкость SFX
+        self.settings["sfx_volume"] = self.sfx_volume_slider.value()
         self.settings["fullscreen"] = self.fullscreen_checkbox.isChecked()
 
         save_settings(self.settings)

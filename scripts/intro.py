@@ -6,6 +6,7 @@ police = define_character("Полицейский", color="#ffcccb")
 woman = define_character("Женщина", color="#ffcccb")
 
 def scene1():
+    show_chapter("ГЛАВА 1", effect="fade", next_script="scripts.chapter1:start")
     show_scene("town", effect="fade")
     play_music("intro.mp3", loop=True)
 
@@ -72,7 +73,7 @@ def scene2():
     say(narrator, "В этой паутине интриг и страстей, где каждый может стать жертвой или преступником, истина остается скрытой, как луна за облаками. Ночь, полная загадок.")
 
     stop_music()
-    show_scene("lib", effect="fade")
+    show_scene("detective_office", effect="fade")
     show_chapter("ГЛАВА 1", effect="fade", next_script="scripts.chapter1:start")
 
 def start():
