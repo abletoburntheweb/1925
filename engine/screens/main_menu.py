@@ -8,6 +8,7 @@ from engine.screens.game_screen import GameScreen
 from engine.screens.settings_menu import SettingsScreen
 from engine.screens.case_screen import CaseScreen
 
+
 class MainMenu(QWidget):
     def __init__(self, game_engine):
         super().__init__()
@@ -40,7 +41,7 @@ class MainMenu(QWidget):
             ("ПРОДОЛЖИТЬ", self.load_game),
             ("НАСТРОЙКИ", self.open_settings),
             ("ДОСЬЕ", self.open_case_screen),
-            ("ВЫХОД", self.game_engine.exit_game),
+            ("ВЫХОД", self.exit_game),  # self.game_engine.exit_game
         ]
 
         for text, callback in buttons_data:
@@ -94,8 +95,25 @@ class MainMenu(QWidget):
     def play_music(self, file_name):
         url = QUrl.fromLocalFile(f"assets/music/{file_name}")
         print(f"Загружаю музыку: {file_name}")
+
         self.music_player.setMedia(QMediaContent(url))
-        self.music_player.play()
+
+        if self.music_player.state() == QMediaPlayer.StoppedState or self.music_player.mediaStatus() == QMediaPlayer.NoMedia:
+            print("Начинаем воспроизведение музыки.")
+            self.music_player.play()
+        elif self.music_player.state() == QMediaPlayer.PausedState:
+            print("Продолжаем воспроизведение музыки.")
+            self.music_player.play()
+
+        try:
+            with open("engine/settings.json", "r", encoding="utf-8") as file:
+                settings = json.load(file)
+        except FileNotFoundError:
+            settings = {"music_volume": 50}
+
+        volume = settings.get("music_volume", 50)
+        self.music_player.setVolume(volume)
+
         print("Музыка главного меню воспроизводится.")
 
     def on_resize(self, event):
@@ -116,20 +134,40 @@ class MainMenu(QWidget):
                                            self.version_label.text()).width(),
                                        self.version_label.fontMetrics().height())
 
+    def fade_out_music(self, duration=1000):
+        steps = 5
+        current_volume = self.music_player.volume()
+        step_duration = duration // steps
+        volume_step = current_volume // steps
+
+        def reduce_volume():
+            nonlocal current_volume
+            if current_volume > 0:
+                current_volume -= volume_step
+                self.music_player.setVolume(current_volume)
+                QTimer.singleShot(step_duration, reduce_volume)
+            else:
+                self.music_player.stop()
+
+        reduce_volume()
+
     def start_new_game(self):
-        self.music_player.stop()
+        print("Начинаем новую игру.")
+        self.fade_out_music(duration=1000)
+        QTimer.singleShot(1000, lambda: self._start_game())
+
+    def _start_game(self):
         if self.settings_screen:
             self.settings_screen.hide()
         print("Музыка главного меню остановлена.")
         self.game_engine.start_script("scripts.intro:start")
 
     def load_game(self):
-        # Останавливаем музыку главного меню
-        if self.music_player:
-            print("Останавливаю музыку главного меню.")
-            self.music_player.stop()
+        print("Загружаем сохраненную игру.")
+        self.fade_out_music(duration=1000)
+        QTimer.singleShot(1000, lambda: self._load_saved_game())
 
-        # Загружаем сохраненную игру
+    def _load_saved_game(self):
         current_screen = self.parent().currentWidget()
         if isinstance(current_screen, GameScreen):
             current_screen.load_game()
@@ -144,7 +182,7 @@ class MainMenu(QWidget):
         if not self.settings_screen:
             self.settings_screen = SettingsScreen(self, self.music_player)
             self.settings_screen.setParent(self)
-            self.settings_screen.setGeometry(420, 0, 1500, 1080)
+            self.settings_screen.setGeometry(420, 0, 1000, 1080)
 
         self.settings_screen.raise_()
         self.settings_screen.show()
@@ -158,5 +196,13 @@ class MainMenu(QWidget):
         super().showEvent(event)
         if self.music_player.state() != QMediaPlayer.PlayingState:
             self.play_music("main_menu.mp3")
-
         QTimer.singleShot(100, self.position_version_label)
+
+    def exit_game(self):
+        print("Начинаем выход из игры.")
+        self.fade_out_music(duration=1000)
+        QTimer.singleShot(1000, self._perform_exit)
+
+    def _perform_exit(self):
+        print("Музыка главного меню остановлена. Выходим из игры.")
+        self.game_engine.exit_game()

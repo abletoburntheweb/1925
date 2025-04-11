@@ -174,6 +174,7 @@ class GameScreen(QWidget):
         self.settings_screen.raise_()
         self.settings_screen.show()
 
+
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Right:
             if self.choice_container and self.choice_container.isVisible() or self.pause_menu.isVisible() or self.notebook.is_notebook_active:
@@ -312,8 +313,8 @@ class GameScreen(QWidget):
         print("Бекаем")
         global music_player
         if music_player:
+            # Сохраняем текущее состояние музыки перед остановкой
             self.last_played_music = music_player.media().canonicalUrl().fileName() if music_player.media() else None
-            print(f"Останавливаю текущую музыку: {self.last_played_music}")
             music_player.stop()
         self.parent().setCurrentWidget(self.parent().main_menu)
 
@@ -524,7 +525,18 @@ class GameScreen(QWidget):
         self.update()
 
     def log_dialogue(self, character, text):
+        if isinstance(text, str) and text.strip().startswith(("if ", "elif ", "else")):
+            return
+
         self.dialogue_history.append((character, text))
+
+    def show_history(self):
+        filtered_dialogues = [
+            dialogue for dialogue in self.dialogue_history
+            if not (isinstance(dialogue[1], str) and dialogue[1].startswith(("if ", "elif ", "else ")))
+        ]
+        self.history_screen.show_history(filtered_dialogues)
+        self.history_screen.raise_()
 
     def show_text_with_animation(self, text, label):
         self.current_text = ""
